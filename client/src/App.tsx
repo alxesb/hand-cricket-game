@@ -11,7 +11,8 @@ function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [hasMadeMove, setHasMadeMove] = useState(false);
-  
+  const [showLobby, setShowLobby] = useState(true);
+
   // Establish socket connection
   useEffect(() => {
     const newSocket = io(SERVER_URL);
@@ -28,11 +29,19 @@ function App() {
 
     socket.on('gameCreated', (game: GameState) => {
       setGameState(game);
+      setShowLobby(false);
     });
 
     socket.on('gameUpdate', (game: GameState) => {
       setGameState(game);
       setHasMadeMove(false); // Reset move status for the new round
+      if (game.gameCode && !game.isGameActive && game.winner) {
+        setShowLobby(false); // Stay on game over screen if game has winner
+      } else if (!game.isGameActive && !game.winner) {
+        setShowLobby(true); // Go back to lobby if game ends without explicit winner (e.g., game deleted)
+      } else if (game.isGameActive) {
+        setShowLobby(false);
+      }
     });
 
     socket.on('tossResult', ({ batter, bowler }) => {
@@ -67,23 +76,38 @@ function App() {
     }
   };
 
+  const handlePlayAgain = () => {
+    setGameState(null);
+    setShowLobby(true);
+  }
+
+  if (showLobby || !gameState?.gameCode) {
+    return (
+      <Lobby
+        onCreateGame={handleCreateGame}
+        onJoinGame={handleJoinGame}
+        gameCode={gameState?.gameCode || null}
+      />
+    );
+  }
+
+  if (!gameState.isGameActive && gameState.winner) {
+    return (
+      <div className="App game-over-screen">
+        <h2>Game Over!</h2>
+        <h3>{gameState.winner.name} won!</h3>
+        <button onClick={handlePlayAgain}>Play Again</button>
+      </div>
+    );
+  }
+
   return (
-    <div className="App">
-      {!gameState || !gameState.isGameActive ? (
-        <Lobby
-          onCreateGame={handleCreateGame}
-          onJoinGame={handleJoinGame}
-          gameCode={gameState?.gameCode || null}
-        />
-      ) : (
-        socket && <GameScreen
-          gameState={gameState}
-          currentPlayerId={socket.id || ''}
-          onMoveSelect={handleMoveSelect}
-          hasMadeMove={hasMadeMove}
-        />
-      )}
-    </div>
+    socket && <GameScreen
+      gameState={gameState}
+      currentPlayerId={socket.id || ''}
+      onMoveSelect={handleMoveSelect}
+      hasMadeMove={hasMadeMove}
+    />
   );
 }
 

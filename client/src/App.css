@@ -154,3 +154,43 @@ button:disabled {
     margin-top: 2rem;
     font-style: italic;
 }
+
+/* Game Over Screen Styles */
+.game-over-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Take full viewport height */
+  text-align: center;
+  gap: 1.5rem;
+  background-color: #242424; /* Darker background */
+  color: #fff;
+}
+
+.game-over-screen h2 {
+  font-size: 3em;
+  color: #646cff;
+  margin-bottom: 0.5rem;
+}
+
+.game-over-screen h3 {
+  font-size: 2em;
+  color: #878eff;
+  margin-bottom: 1.5rem;
+}
+
+.game-over-screen button {
+  padding: 0.8em 1.5em;
+  font-size: 1.2em;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+.game-over-screen button:hover {
+  background-color: #535bf2;
+}
