@@ -6,7 +6,7 @@ import Scorecard from './Scorecard';
 interface GameScreenProps {
   gameState: GameState;
   currentPlayerId: string;
-  onMoveSelect: (move: number) => void;
+  onMoveSelect: (move: number | string) => void;
   hasMadeMove: boolean;
 }
 
