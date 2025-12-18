@@ -29,18 +29,18 @@ function App() {
 
     socket.on('gameCreated', (game: GameState) => {
       setGameState(game);
-      setShowLobby(false);
+      // setShowLobby(false); - Removed this line to keep lobby visible for game code
     });
 
     socket.on('gameUpdate', (game: GameState) => {
       setGameState(game);
       setHasMadeMove(false); // Reset move status for the new round
-      if (game.gameCode && !game.isGameActive && game.winner) {
-        setShowLobby(false); // Stay on game over screen if game has winner
-      } else if (!game.isGameActive && !game.winner) {
-        setShowLobby(true); // Go back to lobby if game ends without explicit winner (e.g., game deleted)
-      } else if (game.isGameActive) {
-        setShowLobby(false);
+
+      // Determine whether to show the lobby based on game state
+      if (game.isGameActive || (!game.isGameActive && game.winner)) {
+        setShowLobby(false); // Game is active or game over with a winner, hide lobby
+      } else {
+        setShowLobby(true); // Game not active and no winner (e.g., waiting for player 2, or game deleted), show lobby
       }
     });
 
