@@ -17,7 +17,7 @@ export type GameState = {
   balls: number;
   target: number | null;
   inning: 1 | 2;
-  moves: { [playerId: string]: number };
+  moves: { [playerId: string]: number | string };
   lastRoundResult: {
     batterMove: number;
     bowlerMove: number;

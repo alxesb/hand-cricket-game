@@ -68,7 +68,35 @@ const performToss = (io: Server, gameCode: string) => {
     io.to(gameCode).emit('gameUpdate', game);
 }
 
-export const makeMove = (io: Server, socket: Socket, gameCode: string, move: number) => {
+// Helper to get the numeric value of a move for scoring
+const getNumericValue = (move: number | string): number => {
+  if (typeof move === 'number') {
+    return move;
+  }
+  // For '1a', '1b', '1c', return 1 for scoring purposes
+  if (move === '1a' || move === '1b' || move === '1c') {
+    return 1;
+  }
+  // For any other unexpected string move, treat as 0 runs
+  return 0;
+};
+
+// Helper to determine if a move results in an out based on new rules
+const isOut = (batterMove: number | string, bowlerMove: number | string): boolean => {
+  // Rule 1: 0-0 defensive play is NOT an out
+  if (batterMove === 0 && bowlerMove === 0) {
+    return false;
+  }
+
+  // Rule 2: Exact match (number vs number, or string vs string) results in an out
+  if (batterMove === bowlerMove) {
+    return true;
+  }
+
+  return false;
+};
+
+export const makeMove = (io: Server, socket: Socket, gameCode: string, move: number | string) => {
   const game = games[gameCode];
   if (!game || !game.isGameActive) return;
 
@@ -87,7 +115,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
     const batterMove = game.moves[game.batter!.id];
     const bowlerMove = game.moves[game.bowler!.id];
 
-    if (batterMove === bowlerMove) {
+    if (isOut(batterMove, bowlerMove)) {
         // OUT
         game.out = true;
         game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
@@ -107,9 +135,17 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
 
     } else {
         // Not out, update score
-        game.score += batterMove;
-        game.balls += 1;
-        game.lastRoundResult = { batterMove, bowlerMove, outcome: `${batterMove} RUNS!` };
+        const batterNumericMove = getNumericValue(batterMove);
+        
+        // Handle 0-0 defensive play penalty
+        if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
+            game.score = Math.max(0, game.score - 1); // Reduce score by 1, minimum 0
+            game.lastRoundResult = { batterMove, bowlerMove, outcome: "0-0 Defensive Penalty: -1 Run!" };
+        } else {
+            game.score += batterNumericMove;
+            game.balls += 1;
+            game.lastRoundResult = { batterMove, bowlerMove, outcome: `${batterNumericMove} RUNS!` };
+        }
 
         if(game.inning === 2 && game.score >= game.target!){
             // Batter wins

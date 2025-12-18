@@ -1,12 +1,12 @@
 import React from 'react';
 
 interface ControlsProps {
-  onMoveSelect: (move: number) => void;
+  onMoveSelect: (move: number | string) => void;
   disabled: boolean;
 }
 
 const Controls: React.FC<ControlsProps> = ({ onMoveSelect, disabled }) => {
-  const numbers = [0, 1, 2, 3, 4, 5, 6];
+  const numbers: (number | string)[] = [0, '1a', '1b', '1c', 2, 3, 4, 6];
 
   return (
     <div className="controls">
