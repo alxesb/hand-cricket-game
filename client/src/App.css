@@ -1,0 +1,156 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Lobby Styles */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.card {
+  background-color: #1a1a1a;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.card h2 {
+  margin-top: 0;
+  color: #646cff;
+}
+
+.game-code-display {
+  margin-top: 1rem;
+  background-color: #2a2a2a;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+.game-code-display code {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #878eff;
+  letter-spacing: 0.1em;
+}
+
+input[type="text"] {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  width: calc(100% - 2.4em);
+  margin-bottom: 1rem;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Game Screen Styles */
+.game-screen {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+  width: 100%;
+}
+
+.scorecard {
+  background-color: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  text-align: left;
+}
+
+.scorecard h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.target {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ffc107;
+    text-align: center;
+}
+
+.score {
+    font-size: 3em;
+    font-weight: bold;
+}
+
+.player-roles {
+    margin: 1rem 0;
+}
+
+.last-round {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #444;
+}
+
+.last-round .outcome {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #64ffda;
+}
+
+.winner-announcement {
+    padding: 1rem;
+    background-color: #28a745;
+    color: white;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.game-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls .button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.controls button {
+  width: 60px;
+  height: 60px;
+  font-size: 1.5em;
+}
+
+.waiting-status, .role-indicator {
+    font-size: 1.2em;
+    color: #aaa;
+}
+
+.role-indicator {
+    margin-top: 2rem;
+    font-style: italic;
+}
