@@ -69,7 +69,7 @@ function App() {
     }
   };
 
-  const handleMoveSelect = (move: number) => {
+  const handleMoveSelect = (move: number | string) => {
     if (gameState) {
       socket?.emit('makeMove', { gameCode: gameState.gameCode, move });
       setHasMadeMove(true);
