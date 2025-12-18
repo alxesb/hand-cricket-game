@@ -5,7 +5,7 @@ import GameScreen from './components/GameScreen';
 import { GameState } from './types';
 import './App.css';
 
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'https://hand-cricket-server.onrender.com';
 
 function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
