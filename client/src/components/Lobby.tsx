@@ -11,7 +11,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode }) => 
 
   return (
     <div className="lobby">
-      <h1>Hand Cricket Online</h1>
+      <h1>HCG</h1>
       <div className="card">
         <h2>Create Game</h2>
         <p>Start a new game and invite a friend.</p>
