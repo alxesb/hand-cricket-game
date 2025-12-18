@@ -24,6 +24,17 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
     return player.id === currentPlayerId ? 'You' : 'Opponent';
   };
 
+  // Helper to get the numeric value of a move for display purposes
+  const getNumericDisplayValue = (move: number | string): number => {
+    if (typeof move === 'number') {
+      return move;
+    }
+    if (move === '1a' || move === '1b' || move === '1c') {
+      return 1;
+    }
+    return 0; // Fallback for unexpected string moves
+  };
+
   return (
     <div className="scorecard">
       <h2>Scorecard</h2>
@@ -45,8 +56,8 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
         <div className="last-round">
           <p><strong>Last Round:</strong></p>
           <p>
-            {getPlayerName(batter)} chose: {lastRoundResult.batterMove} <br />
-            {getPlayerName(bowler)} chose: {lastRoundResult.bowlerMove}
+            {getPlayerName(batter)} chose: {getNumericDisplayValue(lastRoundResult.batterMove)} <br />
+            {getPlayerName(bowler)} chose: {getNumericDisplayValue(lastRoundResult.bowlerMove)}
           </p>
           <p className="outcome">{lastRoundResult.outcome}</p>
         </div>
