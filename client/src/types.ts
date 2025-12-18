@@ -19,8 +19,8 @@ export type GameState = {
   inning: 1 | 2;
   moves: { [playerId: string]: number | string };
   lastRoundResult: {
-    batterMove: number;
-    bowlerMove: number;
+    batterMove: number | string;
+    bowlerMove: number | string;
     outcome: string;
   } | null;
   winner: Player | null;
