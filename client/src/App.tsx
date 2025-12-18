@@ -78,7 +78,7 @@ function App() {
       ) : (
         socket && <GameScreen
           gameState={gameState}
-          currentPlayerId={socket.id}
+          currentPlayerId={socket.id || ''}
           onMoveSelect={handleMoveSelect}
           hasMadeMove={hasMadeMove}
         />
