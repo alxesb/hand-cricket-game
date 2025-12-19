@@ -166,9 +166,38 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
     } else {
         // Not out, update score
         const batterNumericMove = getNumericValue(batterMove);
-        
-        // Update batter stats
-        currentBatterPlayer.runsScored += batterNumericMove;
+        let runsThisRound = batterNumericMove;
+        let outcome = `${runsThisRound} RUNS!`;
+
+        // New rules for 4 and 6
+        if (batterMove === 6 && bowlerMove === 4) {
+            runsThisRound = 4;
+            outcome = `Bowler saved 2 runs! 4 RUNS!`;
+        } else if (batterMove === 4 && bowlerMove === 6) {
+            runsThisRound = 2;
+            outcome = `Bowler saved 2 runs! 2 RUNS!`;
+        }
+
+        // Handle 0-0 defensive play penalty (overrides other scoring)
+        if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
+            runsThisRound = -1;
+            outcome = "0-0 Defensive Penalty: -1 Run!";
+        }
+
+        // --- STATS UPDATE ---
+
+        // Update player and game scores
+        if (runsThisRound === -1) {
+            // Apply penalty
+            game.score = Math.max(0, game.score - 1);
+            currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
+        } else {
+            // Add runs
+            game.score += runsThisRound;
+            currentBatterPlayer.runsScored += runsThisRound;
+        }
+
+        // Update batter stats (balls faced, boundaries based on original move)
         currentBatterPlayer.ballsFaced++;
         if (batterNumericMove === 4) {
           currentBatterPlayer.fours++;
@@ -177,22 +206,15 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
         }
 
         // Update bowler stats
-        currentBowlerPlayer.runsConceded += batterNumericMove;
-        currentBowlerPlayer.oversBowled++; // Increment balls bowled for bowler
+        currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound); // Don't add negative runs
+        currentBowlerPlayer.oversBowled++; // This seems to be balls bowled, not overs.
 
-        // Handle 0-0 defensive play penalty
-        if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
-            game.score = Math.max(0, game.score - 1); // Reduce overall game score
-            currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1); // Reduce individual batter score
-            game.lastRoundResult = { batterMove, bowlerMove, outcome: "0-0 Defensive Penalty: -1 Run!" };
-        } else {
-            game.score += batterNumericMove; // Update overall game score
-            game.balls += 1;
-            game.lastRoundResult = { batterMove, bowlerMove, outcome: `${batterNumericMove} RUNS!` };
-        }
+        // Update game state
+        game.balls += 1; // A ball is always bowled if not out
+        game.lastRoundResult = { batterMove, bowlerMove, outcome };
 
-        if(game.inning === 2 && game.score >= game.target!){
-            // Batter wins
+        // Check for winner in 2nd inning
+        if (game.inning === 2 && game.target !== null && game.score >= game.target) {
             game.winner = currentBatterPlayer; // Use the actual Player object
             game.isGameActive = false;
         }
