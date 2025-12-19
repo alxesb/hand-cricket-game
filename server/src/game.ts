@@ -10,7 +10,17 @@ const generateGameCode = () => {
 
 export const createGame = (io: Server, socket: Socket, playerName: string) => {
   const gameCode = generateGameCode();
-  const player: Player = { id: socket.id, name: playerName || 'Player 1' };
+  const player: Player = {
+    id: socket.id,
+    name: playerName || 'Player 1',
+    runsScored: 0,
+    ballsFaced: 0,
+    fours: 0,
+    sixes: 0,
+    oversBowled: 0,
+    runsConceded: 0,
+    wicketsTaken: 0,
+  };
   games[gameCode] = {
     gameCode,
     players: [player],
@@ -41,7 +51,17 @@ export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: {
     socket.emit('error', 'Game is full');
     return;
   }
-  const player: Player = { id: socket.id, name: playerName || 'Player 2' };
+  const player: Player = {
+    id: socket.id,
+    name: playerName || 'Player 2',
+    runsScored: 0,
+    ballsFaced: 0,
+    fours: 0,
+    sixes: 0,
+    oversBowled: 0,
+    runsConceded: 0,
+    wicketsTaken: 0,
+  };
   game.players.push(player);
   socket.join(gameCode);
 
@@ -111,25 +131,35 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
   }
 
   if (game.moves[player1.id] !== undefined && game.moves[player2.id] !== undefined) {
-    // Both players have made a move, process the round
     const batterMove = game.moves[game.batter!.id];
     const bowlerMove = game.moves[game.bowler!.id];
+
+    // Find the mutable player objects from the array
+    const currentBatterPlayer = game.players.find(p => p.id === game.batter!.id);
+    const currentBowlerPlayer = game.players.find(p => p.id === game.bowler!.id);
+
+    if (!currentBatterPlayer || !currentBowlerPlayer) {
+      console.error(`Error: Batter (${game.batter!.id}) or Bowler (${game.bowler!.id}) not found in game.players array.`);
+      return;
+    }
 
     if (isOut(batterMove, bowlerMove)) {
         // OUT
         game.out = true;
         game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
+        currentBowlerPlayer.wicketsTaken++; // Bowler gets a wicket
+
         if(game.inning === 1){
             // First inning over, switch roles
             game.target = game.score + 1;
             game.inning = 2;
-            [game.batter, game.bowler] = [game.bowler, game.batter];
+            [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
             game.score = 0;
             game.balls = 0;
             game.out = false;
         } else {
             // Second inning over, bowler wins
-            game.winner = game.bowler;
+            game.winner = currentBowlerPlayer; // Use the actual Player object
             game.isGameActive = false;
         }
 
@@ -137,19 +167,33 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
         // Not out, update score
         const batterNumericMove = getNumericValue(batterMove);
         
+        // Update batter stats
+        currentBatterPlayer.runsScored += batterNumericMove;
+        currentBatterPlayer.ballsFaced++;
+        if (batterNumericMove === 4) {
+          currentBatterPlayer.fours++;
+        } else if (batterNumericMove === 6) {
+          currentBatterPlayer.sixes++;
+        }
+
+        // Update bowler stats
+        currentBowlerPlayer.runsConceded += batterNumericMove;
+        currentBowlerPlayer.oversBowled++; // Increment balls bowled for bowler
+
         // Handle 0-0 defensive play penalty
         if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
-            game.score = Math.max(0, game.score - 1); // Reduce score by 1, minimum 0
+            game.score = Math.max(0, game.score - 1); // Reduce overall game score
+            currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1); // Reduce individual batter score
             game.lastRoundResult = { batterMove, bowlerMove, outcome: "0-0 Defensive Penalty: -1 Run!" };
         } else {
-            game.score += batterNumericMove;
+            game.score += batterNumericMove; // Update overall game score
             game.balls += 1;
             game.lastRoundResult = { batterMove, bowlerMove, outcome: `${batterNumericMove} RUNS!` };
         }
 
         if(game.inning === 2 && game.score >= game.target!){
             // Batter wins
-            game.winner = game.batter;
+            game.winner = currentBatterPlayer; // Use the actual Player object
             game.isGameActive = false;
         }
     }

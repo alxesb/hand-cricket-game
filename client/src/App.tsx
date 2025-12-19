@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameScreen from './components/GameScreen';
+import PostGameScorecard from './components/PostGameScorecard'; // New import
 import { GameState } from './types';
 import './App.css';
 
@@ -97,11 +98,11 @@ function App() {
 
   if (!gameState.isGameActive && gameState.winner) {
     return (
-      <div className="App game-over-screen">
-        <h2>Game Over!</h2>
-        <h3>{gameState.winner.name} won!</h3>
-        <button onClick={handlePlayAgain}>Play Again</button>
-      </div>
+      <PostGameScorecard
+        gameState={gameState}
+        currentPlayerId={socket.id || ''}
+        onPlayAgain={handlePlayAgain}
+      />
     );
   }
 

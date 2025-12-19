@@ -4,6 +4,15 @@
 export type Player = {
   id: string;
   name: string;
+  // Batting Stats (cumulative for the game)
+  runsScored: number;
+  ballsFaced: number;
+  fours: number;
+  sixes: number;
+  // Bowling Stats (cumulative for the game)
+  oversBowled: number; // Tracked as total balls, e.g., 7 balls = 1.1 overs
+  runsConceded: number;
+  wicketsTaken: number;
 };
 
 export type GameState = {
