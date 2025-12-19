@@ -194,3 +194,11 @@ button:disabled {
 .game-over-screen button:hover {
   background-color: #535bf2;
 }
+
+/* Runs to Win Styles */
+.runs-to-win {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ffc107; /* Using a prominent color like target */
+    margin-top: 0.5rem;
+}

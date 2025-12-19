@@ -45,6 +45,9 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
           <span className="score">{score}</span>
           <span className="balls"> ({balls} balls)</span>
         </p>
+        {inning === 2 && target !== null && (
+          <p className="runs-to-win">Runs to win: {target - score}</p>
+        )}
       </div>
 
       <div className="player-roles">
