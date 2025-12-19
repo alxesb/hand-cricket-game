@@ -100,7 +100,7 @@ function App() {
     return (
       <PostGameScorecard
         gameState={gameState}
-        currentPlayerId={socket.id || ''}
+        currentPlayerId={socket?.id || ''}
         onPlayAgain={handlePlayAgain}
       />
     );
