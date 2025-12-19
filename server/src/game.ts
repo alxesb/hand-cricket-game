@@ -159,31 +159,34 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
 
   const bowlerMoveCount = game.bowlerMovesInOver[String(bowlerMove)] || 0;
 
-  // Rule: Bowler chose same number 4 times (invalid bowl)
-  if (bowlerMoveCount >= 3) {
-    currentBatterPlayer.runsScored++;
-    game.score++;
-    currentBowlerPlayer.runsConceded++;
+  // Apply bowler move restriction ONLY if bowlerMove is not 2
+  if (bowlerMove !== 2) {
+    // Rule: Bowler chose same number 4 times (invalid bowl)
+    if (bowlerMoveCount >= 3) {
+      currentBatterPlayer.runsScored++;
+      game.score++;
+      currentBowlerPlayer.runsConceded++;
 
-    game.lastRoundResult = {
-      batterMove: '?', // Hide batter's move
-      bowlerMove: bowlerMove,
-      outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.`
-    };
-    
-    // We don't add to history for a no-ball as it's re-bowled
+      game.lastRoundResult = {
+        batterMove: '?', // Hide batter's move
+        bowlerMove: bowlerMove,
+        outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.`
+      };
+      
+      // We don't add to history for a no-ball as it's re-bowled
 
-    game.moves = {}; // Reset for re-bowl
-    io.to(gameCode).emit('gameUpdate', game);
-    return; // End turn
-  }
+      game.moves = {}; // Reset for re-bowl
+      io.to(gameCode).emit('gameUpdate', game);
+      return; // End turn
+    }
 
-  // Valid bowl, so record it for the over
-  game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
+    // Valid bowl, so record it for the over
+    game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
 
-  // Rule: Warn bowler on 3rd use of a number
-  if (bowlerMoveCount === 2) {
-    game.warning = `Warning: Bowler has used '${bowlerMove}' 3 times. They cannot use it again in this over.`;
+    // Rule: Warn bowler on 3rd use of a number
+    if (bowlerMoveCount === 2) {
+      game.warning = `Warning: Bowler has used '${bowlerMove}' 3 times. They cannot use it again in this over.`;
+    }
   }
 
   // --- Move evaluation ---
@@ -243,6 +246,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
     } else {
       // Standard scoring logic
       const batterNumericMove = getNumericValue(batterMove);
+      const bowlerNumericMove = getNumericValue(bowlerMove); // Get numeric value for bowler too
       let runsThisRound = batterNumericMove;
       let outcome = `${runsThisRound} RUNS!`;
 
@@ -252,6 +256,9 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
       } else if (batterMove === 4 && bowlerMove === 6) {
         runsThisRound = 2;
         outcome = `Bowler saved 2 runs! 2 RUNS!`;
+      } else if (batterMove === 3 && bowlerNumericMove === 1) { // New rule
+        runsThisRound = 1;
+        outcome = `Bowler saved 2 runs! 1 RUN!`;
       } else if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
         runsThisRound = -1;
         outcome = "0-0 Defensive Penalty: -1 Run!";

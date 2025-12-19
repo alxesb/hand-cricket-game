@@ -55,17 +55,6 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
         <p><strong>Bowling:</strong> {getPlayerDisplayName(bowler)}</p>
       </div>
 
-      {lastRoundResult && (
-        <div className="last-round">
-          <p><strong>Last Round:</strong></p>
-          <p>
-            {getPlayerDisplayName(batter)} chose: {getNumericDisplayValue(lastRoundResult.batterMove)} <br />
-            {getPlayerDisplayName(bowler)} chose: {getNumericDisplayValue(lastRoundResult.bowlerMove)}
-          </p>
-          <p className="outcome">{lastRoundResult.outcome}</p>
-        </div>
-      )}
-      
       {winner && (
         <div className="winner-announcement">
             <h2>Game Over!</h2>

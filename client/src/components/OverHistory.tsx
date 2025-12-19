@@ -3,6 +3,8 @@ import { RoundResult } from '../types';
 
 interface OverHistoryProps {
   history: RoundResult[];
+  currentPlayerId: string;
+  bowlerId: string;
 }
 
 // Helper function to extract the essential result from the outcome string
@@ -19,10 +21,13 @@ const getDisplayResult = (outcome: string): string => {
   return '?';
 };
 
-const OverHistory: React.FC<OverHistoryProps> = ({ history }) => {
+const OverHistory: React.FC<OverHistoryProps> = ({ history, currentPlayerId, bowlerId }) => {
   if (history.length === 0) {
     return null; // Don't render anything if there's no history for the over
   }
+
+  // Determine if the current player is the batter (i.e., bowler is the opponent)
+  const isBatterViewing = currentPlayerId !== bowlerId;
 
   return (
     <div className="over-history card">
@@ -32,7 +37,7 @@ const OverHistory: React.FC<OverHistoryProps> = ({ history }) => {
           <div className="history-label">Batter</div>
           {history.map((h, i) => <div key={i} className="history-cell">{h.batterMove}</div>)}
         </div>
-        <div className="history-row">
+        <div className={`history-row ${isBatterViewing ? 'highlight-bowler-moves' : ''}`}>
           <div className="history-label">Bowler</div>
           {history.map((h, i) => <div key={i} className="history-cell">{h.bowlerMove}</div>)}
         </div>

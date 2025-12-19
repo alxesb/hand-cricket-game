@@ -46,8 +46,7 @@ const PostGameScorecard: React.FC<PostGameScorecardProps> = ({ gameState, curren
             <h4>{getPlayerDisplayName(player)}</h4>
             <div className="batting-stats">
               <h5>Batting</h5>
-              <p>Runs: {player.runsScored}</p>
-              <p>Balls: {player.ballsFaced}</p>
+              <p>Runs: {player.runsScored} ({player.ballsFaced} balls)</p>
               <p>Fours: {player.fours}</p>
               <p>Sixes: {player.sixes}</p>
               <p>Strike Rate: {calculateStrikeRate(player.runsScored, player.ballsFaced)}</p>

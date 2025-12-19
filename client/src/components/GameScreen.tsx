@@ -29,11 +29,21 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
     <div className="game-screen">
       <div> {/* Wrapper for the first grid column */}
         <Scorecard gameState={gameState} currentPlayerId={currentPlayerId} />
-        <OverHistory history={currentOverHistory} />
+        <OverHistory history={currentOverHistory} currentPlayerId={currentPlayerId} bowlerId={gameState.bowler?.id || ''} />
       </div>
       
       <div className="game-area">
         {warning && <div className="warning">{warning}</div>}
+
+        {/* New Commentary Box */}
+        {gameState.lastRoundResult && (
+            <div className="commentary-box">
+                <p>
+                    {gameState.bowler?.name} bowled a <strong>{gameState.lastRoundResult.bowlerMove}</strong>, {gameState.batter?.name} played a <strong>{gameState.lastRoundResult.batterMove}</strong>.
+                </p>
+                <p className="outcome">{gameState.lastRoundResult.outcome}</p>
+            </div>
+        )}
 
         {winner ? (
           <div className="game-over">
@@ -45,6 +55,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
               <p className="waiting-status">Waiting for the other player...</p>
             ) : (
               <Controls onMoveSelect={onMoveSelect} disabled={false} />
+            )}
+            {isBatter ? (
+              <img src="/images/bat.svg" alt="Bat icon" className="game-icon" />
+            ) : (
+              <img src="/images/ball.svg" alt="Ball icon" className="game-icon" />
             )}
             <div className="role-indicator">
                 You are currently {isBatter ? 'Batting' : 'Bowling'}.

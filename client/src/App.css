@@ -104,24 +104,35 @@ button:disabled {
     margin: 1rem 0;
 }
 
-.last-round {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #444;
-}
-
-.last-round .outcome {
-    font-weight: bold;
-    font-size: 1.2em;
-    color: #64ffda;
-}
-
 .winner-announcement {
     padding: 1rem;
     background-color: #28a745;
     color: white;
     border-radius: 4px;
     text-align: center;
+}
+
+/* Commentary Box Styles */
+.commentary-box {
+  background-color: #2a2a2a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.commentary-box p {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.commentary-box .outcome {
+  margin-top: 0.75rem;
+  font-weight: bold;
+  font-size: 1.4em;
+  color: #64ffda;
 }
 
 .game-area {
@@ -340,4 +351,18 @@ button:disabled {
   border-radius: 8px;
   text-align: center;
   margin: 1rem 0;
+}
+
+.highlight-bowler-moves {
+  background-color: #4a4a4a; /* A subtle highlight color */
+  border-left: 5px solid #646cff; /* A more prominent highlight */
+  padding-left: calc(1rem - 5px); /* Adjust padding due to border */
+}
+
+.game-icon {
+    width: 50px;
+    height: 50px;
+    margin: 1rem auto; /* Center the icon */
+    display: block;
+    color: #646cff; /* Use primary color for icons */
 }
