@@ -21,12 +21,12 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  socket.on('createGame', () => {
-    createGame(io, socket);
+  socket.on('createGame', (playerName: string) => {
+    createGame(io, socket, playerName);
   });
 
-  socket.on('joinGame', (gameCode: string) => {
-    joinGame(io, socket, gameCode);
+  socket.on('joinGame', (data: { gameCode: string, playerName: string }) => {
+    joinGame(io, socket, data);
   });
 
   socket.on('makeMove', ({ gameCode, move }: { gameCode: string, move: number }) => {
