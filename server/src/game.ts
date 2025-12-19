@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { GameState, Player } from './types';
+import { GameState, Player, RoundResult } from './types';
 
 // In-memory store for games
 const games: { [key: string]: GameState } = {};
@@ -36,6 +36,10 @@ export const createGame = (io: Server, socket: Socket, playerName: string) => {
     lastRoundResult: null,
     winner: null,
     out: false,
+    consecutiveTwos: 0,
+    bowlerMovesInOver: {},
+    warning: null,
+    currentOverHistory: [],
   };
   socket.join(gameCode);
   socket.emit('gameCreated', games[gameCode]);
@@ -108,7 +112,12 @@ const isOut = (batterMove: number | string, bowlerMove: number | string): boolea
     return false;
   }
 
-  // Rule 2: Exact match (number vs number, or string vs string) results in an out
+  // Rule 2: Matching 2s is a dot ball, not an out by this function
+  if (batterMove === 2 && bowlerMove === 2) {
+    return false;
+  }
+
+  // Rule 3: Exact match (number vs number, or string vs string) results in an out
   if (batterMove === bowlerMove) {
     return true;
   }
@@ -120,111 +129,166 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
   const game = games[gameCode];
   if (!game || !game.isGameActive) return;
 
-  // Record the move
+  // Clear previous round's warning
+  game.warning = null;
+
+  // Record the move for the current player
   game.moves[socket.id] = move;
 
   const [player1, player2] = game.players;
 
-  // Ensure both players are present before processing moves
-  if (!player1 || !player2) {
+  // Wait until both players have made a move
+  if (!player1 || !player2 || game.moves[player1.id] === undefined || game.moves[player2.id] === undefined) {
     return;
   }
 
-  if (game.moves[player1.id] !== undefined && game.moves[player2.id] !== undefined) {
-    const batterMove = game.moves[game.batter!.id];
-    const bowlerMove = game.moves[game.bowler!.id];
+  // Both players have moved, proceed with game logic
+  const batterMove = game.moves[game.batter!.id];
+  const bowlerMove = game.moves[game.bowler!.id];
 
-    // Find the mutable player objects from the array
-    const currentBatterPlayer = game.players.find(p => p.id === game.batter!.id);
-    const currentBowlerPlayer = game.players.find(p => p.id === game.bowler!.id);
+  const currentBatterPlayer = game.players.find(p => p.id === game.batter!.id)!;
+  const currentBowlerPlayer = game.players.find(p => p.id === game.bowler!.id)!;
 
-    if (!currentBatterPlayer || !currentBowlerPlayer) {
-      console.error(`Error: Batter (${game.batter!.id}) or Bowler (${game.bowler!.id}) not found in game.players array.`);
-      return;
-    }
+  // --- Over and Bowler Validation ---
 
-    if (isOut(batterMove, bowlerMove)) {
-        // OUT
-        game.out = true;
-        game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
-        currentBowlerPlayer.wicketsTaken++; // Bowler gets a wicket
-
-        if(game.inning === 1){
-            // First inning over, switch roles
-            game.target = game.score + 1;
-            game.inning = 2;
-            [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
-            game.score = 0;
-            game.balls = 0;
-            game.out = false;
-        } else {
-            // Second inning over, bowler wins
-            game.winner = currentBowlerPlayer; // Use the actual Player object
-            game.isGameActive = false;
-        }
-
-    } else {
-        // Not out, update score
-        const batterNumericMove = getNumericValue(batterMove);
-        let runsThisRound = batterNumericMove;
-        let outcome = `${runsThisRound} RUNS!`;
-
-        // New rules for 4 and 6
-        if (batterMove === 6 && bowlerMove === 4) {
-            runsThisRound = 4;
-            outcome = `Bowler saved 2 runs! 4 RUNS!`;
-        } else if (batterMove === 4 && bowlerMove === 6) {
-            runsThisRound = 2;
-            outcome = `Bowler saved 2 runs! 2 RUNS!`;
-        }
-
-        // Handle 0-0 defensive play penalty (overrides other scoring)
-        if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
-            runsThisRound = -1;
-            outcome = "0-0 Defensive Penalty: -1 Run!";
-        }
-
-        // --- STATS UPDATE ---
-
-        // Update player and game scores
-        if (runsThisRound === -1) {
-            // Apply penalty
-            game.score = Math.max(0, game.score - 1);
-            currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
-        } else {
-            // Add runs
-            game.score += runsThisRound;
-            currentBatterPlayer.runsScored += runsThisRound;
-        }
-
-        // Update batter stats (balls faced, boundaries based on original move)
-        currentBatterPlayer.ballsFaced++;
-        if (batterNumericMove === 4) {
-          currentBatterPlayer.fours++;
-        } else if (batterNumericMove === 6) {
-          currentBatterPlayer.sixes++;
-        }
-
-        // Update bowler stats
-        currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound); // Don't add negative runs
-        currentBowlerPlayer.oversBowled++; // This seems to be balls bowled, not overs.
-
-        // Update game state
-        game.balls += 1; // A ball is always bowled if not out
-        game.lastRoundResult = { batterMove, bowlerMove, outcome };
-
-        // Check for winner in 2nd inning
-        if (game.inning === 2 && game.target !== null && game.score >= game.target) {
-            game.winner = currentBatterPlayer; // Use the actual Player object
-            game.isGameActive = false;
-        }
-    }
-
-    // Reset moves for the next round
-    game.moves = {};
-    
-    io.to(gameCode).emit('gameUpdate', game);
+  // Reset for new over
+  if (game.balls > 0 && game.balls % 6 === 0) {
+    game.bowlerMovesInOver = {};
+    game.currentOverHistory = [];
   }
+
+  const bowlerMoveCount = game.bowlerMovesInOver[String(bowlerMove)] || 0;
+
+  // Rule: Bowler chose same number 4 times (invalid bowl)
+  if (bowlerMoveCount >= 3) {
+    currentBatterPlayer.runsScored++;
+    game.score++;
+    currentBowlerPlayer.runsConceded++;
+
+    game.lastRoundResult = {
+      batterMove: '?', // Hide batter's move
+      bowlerMove: bowlerMove,
+      outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.`
+    };
+    
+    // We don't add to history for a no-ball as it's re-bowled
+
+    game.moves = {}; // Reset for re-bowl
+    io.to(gameCode).emit('gameUpdate', game);
+    return; // End turn
+  }
+
+  // Valid bowl, so record it for the over
+  game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
+
+  // Rule: Warn bowler on 3rd use of a number
+  if (bowlerMoveCount === 2) {
+    game.warning = `Warning: Bowler has used '${bowlerMove}' 3 times. They cannot use it again in this over.`;
+  }
+
+  // --- Move evaluation ---
+
+  let isPlayerOut = false;
+
+  // Rule: 3 consecutive matching 2s is an out
+  if (batterMove === 2 && bowlerMove === 2) {
+    game.consecutiveTwos++;
+    if (game.consecutiveTwos >= 3) {
+      isPlayerOut = true;
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT! (3 consecutive matching 2s)" };
+    }
+  } else {
+    game.consecutiveTwos = 0; // Reset counter if the chain is broken
+  }
+
+  // Check for other out conditions
+  if (!isPlayerOut && isOut(batterMove, bowlerMove)) {
+    isPlayerOut = true;
+    game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
+  }
+
+  // --- Process Outcome ---
+
+  if (isPlayerOut) {
+    game.out = true;
+    currentBowlerPlayer.wicketsTaken++;
+    game.consecutiveTwos = 0; // Reset for next batter
+    
+    // Add the 'out' ball to history
+    if (game.lastRoundResult) {
+        game.currentOverHistory.push(game.lastRoundResult);
+    }
+
+    if (game.inning === 1) {
+      game.target = game.score + 1;
+      game.inning = 2;
+      [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
+      game.score = 0;
+      game.balls = 0;
+      game.out = false;
+      game.bowlerMovesInOver = {};
+      game.currentOverHistory = []; // Reset for new inning
+    } else {
+      game.winner = currentBowlerPlayer;
+      game.isGameActive = false;
+    }
+  } else {
+    // Not out, update score
+    game.balls += 1; // A valid ball has been bowled
+
+    if (batterMove === 2 && bowlerMove === 2) {
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball!" };
+      currentBatterPlayer.ballsFaced++;
+      currentBowlerPlayer.oversBowled++;
+    } else {
+      // Standard scoring logic
+      const batterNumericMove = getNumericValue(batterMove);
+      let runsThisRound = batterNumericMove;
+      let outcome = `${runsThisRound} RUNS!`;
+
+      if (batterMove === 6 && bowlerMove === 4) {
+        runsThisRound = 4;
+        outcome = `Bowler saved 2 runs! 4 RUNS!`;
+      } else if (batterMove === 4 && bowlerMove === 6) {
+        runsThisRound = 2;
+        outcome = `Bowler saved 2 runs! 2 RUNS!`;
+      } else if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
+        runsThisRound = -1;
+        outcome = "0-0 Defensive Penalty: -1 Run!";
+      }
+
+      if (runsThisRound === -1) {
+        game.score = Math.max(0, game.score - 1);
+        currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
+      } else {
+        game.score += runsThisRound;
+        currentBatterPlayer.runsScored += runsThisRound;
+      }
+
+      currentBatterPlayer.ballsFaced++;
+      if (batterNumericMove === 4) currentBatterPlayer.fours++;
+      else if (batterNumericMove === 6) currentBatterPlayer.sixes++;
+
+      currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound);
+      currentBowlerPlayer.oversBowled++;
+
+      game.lastRoundResult = { batterMove, bowlerMove, outcome };
+    }
+    
+    // Add the ball to history
+    if (game.lastRoundResult) {
+        game.currentOverHistory.push(game.lastRoundResult);
+    }
+
+    if (game.inning === 2 && game.target !== null && game.score >= game.target) {
+      game.winner = currentBatterPlayer;
+      game.isGameActive = false;
+    }
+  }
+
+  // Reset moves for the next round
+  game.moves = {};
+  io.to(gameCode).emit('gameUpdate', game);
 };
 
 export const handleDisconnect = (io: Server, socket: Socket) => {

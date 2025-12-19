@@ -24,11 +24,18 @@ export type GameState = {
   target: number | null;
   inning: 1 | 2;
   moves: { [playerId: string]: number | string };
-  lastRoundResult: {
-    batterMove: number | string;
-    bowlerMove: number | string;
-    outcome: string;
-  } | null;
+  lastRoundResult: RoundResult | null;
   winner: Player | null;
   out: boolean;
+  // New state for advanced rules
+  consecutiveTwos: number;
+  bowlerMovesInOver: { [move: string]: number };
+  warning: string | null;
+  currentOverHistory: RoundResult[];
+};
+
+export type RoundResult = {
+  batterMove: number | string;
+  bowlerMove: number | string;
+  outcome: string;
 };

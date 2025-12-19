@@ -289,3 +289,55 @@ button:disabled {
 .play-again-button:hover {
   background-color: #535bf2;
 }
+
+/* Over History Display */
+.over-history {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.over-history h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.history-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 60px repeat(6, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.history-label {
+  font-weight: bold;
+  text-align: left;
+}
+
+.history-cell {
+  background-color: #333;
+  padding: 0.25rem;
+  border-radius: 4px;
+  min-width: 30px;
+}
+
+.final-result .history-cell {
+  font-weight: bold;
+  background-color: #1a5fb4;
+}
+
+/* Warning Message */
+.warning {
+  background-color: #b46f1a;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 1rem 0;
+}

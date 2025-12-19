@@ -34,4 +34,15 @@ export type GameState = {
   } | null;
   winner: Player | null;
   out: boolean;
+  // New state for advanced rules, mirroring server
+  consecutiveTwos: number;
+  bowlerMovesInOver: { [move: string]: number };
+  warning: string | null;
+  currentOverHistory: RoundResult[];
+};
+
+export type RoundResult = {
+  batterMove: number | string;
+  bowlerMove: number | string;
+  outcome: string;
 };

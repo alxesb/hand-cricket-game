@@ -2,6 +2,7 @@ import React from 'react';
 import { GameState } from '../types';
 import Controls from './Controls';
 import Scorecard from './Scorecard';
+import OverHistory from './OverHistory'; // New import
 
 interface GameScreenProps {
   gameState: GameState;
@@ -11,7 +12,7 @@ interface GameScreenProps {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onMoveSelect, hasMadeMove }) => {
-  const { batter, winner, isTossDone } = gameState;
+  const { batter, winner, isTossDone, warning, currentOverHistory } = gameState;
 
   const isBatter = batter?.id === currentPlayerId;
 
@@ -26,9 +27,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
 
   return (
     <div className="game-screen">
-      <Scorecard gameState={gameState} currentPlayerId={currentPlayerId} />
+      <div> {/* Wrapper for the first grid column */}
+        <Scorecard gameState={gameState} currentPlayerId={currentPlayerId} />
+        <OverHistory history={currentOverHistory} />
+      </div>
       
       <div className="game-area">
+        {warning && <div className="warning">{warning}</div>}
+
         {winner ? (
           <div className="game-over">
             <h3>Game Over!</h3>
@@ -49,5 +55,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
     </div>
   );
 };
+
 
 export default GameScreen;
