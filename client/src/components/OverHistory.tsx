@@ -14,7 +14,7 @@ const getDisplayResult = (outcome: string): string => {
   if (outcome.includes('Penalty')) return '-1';
 
   // Extracts number from "X RUNS!" or "Bowler saved Y runs! Z RUNS!"
-  const match = outcome.match(/(-?\d+)\s*RUNS/);
+  const match = outcome.match(/(-?\d+)\s*RUN/);
   if (match) {
     return match[1];
   }
