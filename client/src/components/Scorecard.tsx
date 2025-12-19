@@ -19,11 +19,6 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
     players,
   } = gameState;
 
-  const getPlayerName = (player: Player | null) => {
-    if (!player) return '';
-    return player.id === currentPlayerId ? 'You' : 'Opponent';
-  };
-
   // Helper to get the numeric value of a move for display purposes
   const getNumericDisplayValue = (move: number | string): number => {
     if (typeof move === 'number') {
@@ -34,6 +29,11 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
     }
     return 0; // Fallback for unexpected string moves
   };
+
+  const getPlayerDisplayName = (player: Player | null) => {
+    if (!player) return '';
+    return player.name + (player.id === currentPlayerId ? ' (You)' : '');
+  }
 
   return (
     <div className="scorecard">
@@ -51,16 +51,16 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
       </div>
 
       <div className="player-roles">
-        <p><strong>Batting:</strong> {getPlayerName(batter)}</p>
-        <p><strong>Bowling:</strong> {getPlayerName(bowler)}</p>
+        <p><strong>Batting:</strong> {getPlayerDisplayName(batter)}</p>
+        <p><strong>Bowling:</strong> {getPlayerDisplayName(bowler)}</p>
       </div>
 
       {lastRoundResult && (
         <div className="last-round">
           <p><strong>Last Round:</strong></p>
           <p>
-            {getPlayerName(batter)} chose: {getNumericDisplayValue(lastRoundResult.batterMove)} <br />
-            {getPlayerName(bowler)} chose: {getNumericDisplayValue(lastRoundResult.bowlerMove)}
+            {getPlayerDisplayName(batter)} chose: {getNumericDisplayValue(lastRoundResult.batterMove)} <br />
+            {getPlayerDisplayName(bowler)} chose: {getNumericDisplayValue(lastRoundResult.bowlerMove)}
           </p>
           <p className="outcome">{lastRoundResult.outcome}</p>
         </div>
@@ -69,7 +69,7 @@ const Scorecard: React.FC<ScorecardProps> = ({ gameState, currentPlayerId }) => 
       {winner && (
         <div className="winner-announcement">
             <h2>Game Over!</h2>
-            <p>{getPlayerName(winner)} wins!</p>
+            <p>{getPlayerDisplayName(winner)} wins!</p>
         </div>
       )}
     </div>

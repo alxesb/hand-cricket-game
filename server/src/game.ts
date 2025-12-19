@@ -8,9 +8,9 @@ const generateGameCode = () => {
   return Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-export const createGame = (io: Server, socket: Socket) => {
+export const createGame = (io: Server, socket: Socket, playerName: string) => {
   const gameCode = generateGameCode();
-  const player: Player = { id: socket.id, name: 'Player 1' };
+  const player: Player = { id: socket.id, name: playerName || 'Player 1' };
   games[gameCode] = {
     gameCode,
     players: [player],
@@ -31,7 +31,7 @@ export const createGame = (io: Server, socket: Socket) => {
   socket.emit('gameCreated', games[gameCode]);
 };
 
-export const joinGame = (io: Server, socket: Socket, gameCode: string) => {
+export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: { gameCode: string; playerName: string }) => {
   const game = games[gameCode];
   if (!game) {
     socket.emit('error', 'Game not found');
@@ -41,7 +41,7 @@ export const joinGame = (io: Server, socket: Socket, gameCode: string) => {
     socket.emit('error', 'Game is full');
     return;
   }
-  const player: Player = { id: socket.id, name: 'Player 2' };
+  const player: Player = { id: socket.id, name: playerName || 'Player 2' };
   game.players.push(player);
   socket.join(gameCode);
 

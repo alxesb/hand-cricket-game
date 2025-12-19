@@ -12,6 +12,7 @@ function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [hasMadeMove, setHasMadeMove] = useState(false);
   const [showLobby, setShowLobby] = useState(true);
+  const [playerName, setPlayerName] = useState<string>(''); // New state for player name
 
   // Establish socket connection
   useEffect(() => {
@@ -60,12 +61,12 @@ function App() {
   }, [socket, gameState]);
 
   const handleCreateGame = () => {
-    socket?.emit('createGame');
+    socket?.emit('createGame', playerName); // Pass player name
   };
 
   const handleJoinGame = (gameCode: string) => {
     if (gameCode) {
-      socket?.emit('joinGame', gameCode);
+      socket?.emit('joinGame', { gameCode, playerName }); // Pass player name
     }
   };
 
@@ -79,6 +80,7 @@ function App() {
   const handlePlayAgain = () => {
     setGameState(null);
     setShowLobby(true);
+    setPlayerName(''); // Reset player name on play again
   }
 
   if (showLobby || !gameState?.gameCode) {
@@ -87,6 +89,8 @@ function App() {
         onCreateGame={handleCreateGame}
         onJoinGame={handleJoinGame}
         gameCode={gameState?.gameCode || null}
+        playerName={playerName} // Pass playerName to Lobby
+        setPlayerName={setPlayerName} // Pass setPlayerName to Lobby
       />
     );
   }
