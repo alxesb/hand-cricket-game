@@ -367,22 +367,13 @@ button:disabled {
     color: #ffffff; /* Change color to white for better visibility of new ball */
 }
 
-/* Current Batter Score Display */
-.current-batter-score {
-  font-size: 1.2em;
-  font-weight: bold;
-  color: #ccc;
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.batter-runs {
-  color: #64ffda; /* Highlight runs */
-}
-
-.batter-balls {
+/* Batter name next to score */
+.batter-name-on-score {
+  font-size: 0.5em; /* Smaller than the score */
   font-weight: normal;
-  color: #aaa;
+  color: #ccc;
+  vertical-align: middle; /* Align with the middle of the big score number */
+  margin-right: 0.5rem;
 }
 
 /* Control Button Colors */
