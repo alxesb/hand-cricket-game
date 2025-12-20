@@ -6,7 +6,7 @@ interface ControlsProps {
 }
 
 const Controls: React.FC<ControlsProps> = ({ onMoveSelect, disabled }) => {
-  const numbers: (number | string)[] = [0, '1a', '1b', '1c', 2, 3, 4, 6];
+  const numbers: (number | string)[] = [0, '1a', '1b', '1c', 2, 3, 4, 6, '6B'];
 
   return (
     <div className="controls">

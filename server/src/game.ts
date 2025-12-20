@@ -161,139 +161,112 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
 
   // Apply bowler move restriction ONLY if bowlerMove is not 2
   if (bowlerMove !== 2) {
-    // Rule: Bowler chose same number 4 times (invalid bowl)
     if (bowlerMoveCount >= 3) {
       currentBatterPlayer.runsScored++;
       game.score++;
       currentBowlerPlayer.runsConceded++;
-
-      game.lastRoundResult = {
-        batterMove: '?', // Hide batter's move
-        bowlerMove: bowlerMove,
-        outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.`
-      };
-      
-      // We don't add to history for a no-ball as it's re-bowled
-
-      game.moves = {}; // Reset for re-bowl
+      game.lastRoundResult = { batterMove: '?', bowlerMove, outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.` };
+      game.moves = {};
       io.to(gameCode).emit('gameUpdate', game);
       return; // End turn
     }
-
-    // Valid bowl, so record it for the over
     game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
-
-    // Rule: Warn bowler on 3rd use of a number
     if (bowlerMoveCount === 2) {
       game.warning = `Warning: Bowler has used '${bowlerMove}' 3 times. They cannot use it again in this over.`;
     }
   }
 
-  // --- Move evaluation ---
-
   let isPlayerOut = false;
 
-  // Rule: 3 consecutive matching 2s is an out
-  if (batterMove === 2 && bowlerMove === 2) {
+  // --- Move Evaluation Logic ---
+  if (batterMove === '6B') {
+    if (bowlerMove === 0) {
+      isPlayerOut = true;
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT! 6B backfired!" };
+    } else if (bowlerMove === 6) {
+      const runsThisRound = 6;
+      game.score += runsThisRound;
+      currentBatterPlayer.runsScored += runsThisRound;
+      currentBatterPlayer.sixes++;
+      currentBowlerPlayer.runsConceded += runsThisRound;
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "SIX! 6B successful!" };
+    } else {
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball! 6B defended." };
+    }
+  } else if (batterMove === 2 && bowlerMove === 2) {
     game.consecutiveTwos++;
     if (game.consecutiveTwos >= 3) {
       isPlayerOut = true;
       game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT! (3 consecutive matching 2s)" };
+    } else {
+      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball!" };
     }
-  } else {
-    game.consecutiveTwos = 0; // Reset counter if the chain is broken
-  }
-
-  // Check for other out conditions
-  if (!isPlayerOut && isOut(batterMove, bowlerMove)) {
+  } else if (isOut(batterMove, bowlerMove)) {
     isPlayerOut = true;
     game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
+  } else {
+    // Standard Scoring for non-special cases
+    game.consecutiveTwos = 0;
+    const batterNumericMove = getNumericValue(batterMove);
+    const bowlerNumericMove = getNumericValue(bowlerMove);
+    let runsThisRound = batterNumericMove;
+    let outcome = `${runsThisRound} RUNS!`;
+
+    if (batterMove === 6 && bowlerMove === 4) { runsThisRound = 4; outcome = `Bowler saved 2 runs! 4 RUNS!`; }
+    else if (batterMove === 4 && bowlerMove === 6) { runsThisRound = 2; outcome = `Bowler saved 2 runs! 2 RUNS!`; }
+    else if (batterMove === 3 && bowlerNumericMove === 1) { runsThisRound = 1; outcome = `Bowler saved 2 runs! 1 RUN!`; }
+    else if (batterMove === 0 && bowlerMove === 0 && game.score > 0) { runsThisRound = -1; outcome = "0-0 Defensive Penalty: -1 Run!"; }
+
+    if (runsThisRound === -1) {
+      game.score = Math.max(0, game.score - 1);
+      currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
+    } else {
+      game.score += runsThisRound;
+      currentBatterPlayer.runsScored += runsThisRound;
+    }
+
+    if (batterNumericMove === 4) currentBatterPlayer.fours++;
+    else if (batterNumericMove === 6) currentBatterPlayer.sixes++;
+    currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound);
+    game.lastRoundResult = { batterMove, bowlerMove, outcome };
   }
 
-  // --- Process Outcome ---
+  // --- Post-Evaluation State Update ---
+  game.balls += 1;
+  currentBatterPlayer.ballsFaced++;
+  currentBowlerPlayer.oversBowled++;
 
   if (isPlayerOut) {
     game.out = true;
     currentBowlerPlayer.wicketsTaken++;
-    game.consecutiveTwos = 0; // Reset for next batter
-    
-    // Add the 'out' ball to history
-    if (game.lastRoundResult) {
-        game.currentOverHistory.push(game.lastRoundResult);
-    }
+    game.consecutiveTwos = 0;
 
     if (game.inning === 1) {
       game.target = game.score + 1;
       game.inning = 2;
-      [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
+      [game.batter, game.bowler] = [game.bowler, game.batter];
       game.score = 0;
       game.balls = 0;
       game.out = false;
       game.bowlerMovesInOver = {};
-      game.currentOverHistory = []; // Reset for new inning
+      game.currentOverHistory = [];
     } else {
       game.winner = currentBowlerPlayer;
       game.isGameActive = false;
     }
   } else {
-    // Not out, update score
-    game.balls += 1; // A valid ball has been bowled
-
-    if (batterMove === 2 && bowlerMove === 2) {
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball!" };
-      currentBatterPlayer.ballsFaced++;
-      currentBowlerPlayer.oversBowled++;
-    } else {
-      // Standard scoring logic
-      const batterNumericMove = getNumericValue(batterMove);
-      const bowlerNumericMove = getNumericValue(bowlerMove); // Get numeric value for bowler too
-      let runsThisRound = batterNumericMove;
-      let outcome = `${runsThisRound} RUNS!`;
-
-      if (batterMove === 6 && bowlerMove === 4) {
-        runsThisRound = 4;
-        outcome = `Bowler saved 2 runs! 4 RUNS!`;
-      } else if (batterMove === 4 && bowlerMove === 6) {
-        runsThisRound = 2;
-        outcome = `Bowler saved 2 runs! 2 RUNS!`;
-      } else if (batterMove === 3 && bowlerNumericMove === 1) { // New rule
-        runsThisRound = 1;
-        outcome = `Bowler saved 2 runs! 1 RUN!`;
-      } else if (batterMove === 0 && bowlerMove === 0 && game.score > 0) {
-        runsThisRound = -1;
-        outcome = "0-0 Defensive Penalty: -1 Run!";
-      }
-
-      if (runsThisRound === -1) {
-        game.score = Math.max(0, game.score - 1);
-        currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
-      } else {
-        game.score += runsThisRound;
-        currentBatterPlayer.runsScored += runsThisRound;
-      }
-
-      currentBatterPlayer.ballsFaced++;
-      if (batterNumericMove === 4) currentBatterPlayer.fours++;
-      else if (batterNumericMove === 6) currentBatterPlayer.sixes++;
-
-      currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound);
-      currentBowlerPlayer.oversBowled++;
-
-      game.lastRoundResult = { batterMove, bowlerMove, outcome };
-    }
-    
-    // Add the ball to history
-    if (game.lastRoundResult) {
-        game.currentOverHistory.push(game.lastRoundResult);
-    }
-
+    // Check for winner in 2nd inning after a non-out ball
     if (game.inning === 2 && game.target !== null && game.score >= game.target) {
       game.winner = currentBatterPlayer;
       game.isGameActive = false;
     }
   }
 
-  // Reset moves for the next round
+  // Add the result of the valid ball to history
+  if (game.lastRoundResult) {
+    game.currentOverHistory.push(game.lastRoundResult);
+  }
+  
   game.moves = {};
   io.to(gameCode).emit('gameUpdate', game);
 };
