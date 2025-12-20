@@ -1,5 +1,11 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-<path d="M12 2V22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-<path d="M2 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Ball -->
+  <circle cx="100" cy="100" r="98" fill="#b30000"/>
+  <!-- Shine -->
+  <path d="M150,50 A70,70 0 0,0 50,150 A98,98 0 0,1 150,50" fill="#d90000" />
+  <!-- Seam -->
+  <path d="M100,2 V198" stroke="#ffffff" stroke-width="6" />
+  <path d="M100,2 V198" stroke="#a0522d" stroke-width="4" />
+  <!-- Seam Stitching -->
+  <path d="M90,10 L110,20 M90,30 L110,40 M90,50 L110,60 M90,70 L110,80 M90,90 L110,100 M90,110 L110,120 M90,130 L110,140 M90,150 L110,160 M90,170 L110,180" stroke="#ffffff" stroke-width="2" />
 </svg>

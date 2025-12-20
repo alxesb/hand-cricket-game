@@ -360,9 +360,44 @@ button:disabled {
 }
 
 .game-icon {
-    width: 50px;
-    height: 50px;
-    margin: 1rem auto; /* Center the icon */
+    height: 80px; /* Increase size */
+    width: auto;  /* Let width adjust to maintain aspect ratio */
+    margin: 1.5rem auto; /* Adjust margin */
     display: block;
-    color: #646cff; /* Use primary color for icons */
+    color: #ffffff; /* Change color to white for better visibility of new ball */
+}
+
+/* Current Batter Score Display */
+.current-batter-score {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ccc;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.batter-runs {
+  color: #64ffda; /* Highlight runs */
+}
+
+.batter-balls {
+  font-weight: normal;
+  color: #aaa;
+}
+
+/* Control Button Colors */
+.controls .btn-green {
+  background-color: #28a745;
+  border-color: #34d356;
+}
+.controls .btn-green:hover {
+  border-color: #64ffda;
+}
+
+.controls .btn-red {
+  background-color: #dc3545;
+  border-color: #ff5c6c;
+}
+.controls .btn-red:hover {
+  border-color: #ff9a9e;
 }
