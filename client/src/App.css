@@ -67,49 +67,93 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Game Screen Styles */
-.game-screen {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
+/* Game Screen Layout - Now a single column flex container */
+.game-screen-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Spacing between sections */
   width: 100%;
+  max-width: 800px; /* Constrain width as before */
+  margin: 0 auto; /* Center the layout */
+  padding: 1rem;
 }
 
-.scorecard {
+/* Header Score Component */
+.header-score {
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  text-align: center;
+}
+
+.score-main {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: #fff;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.team-name {
+  font-size: 0.5em;
+  color: #aaa;
+  margin-right: 0.5rem;
+}
+
+.total-score {
+  color: #64ffda; /* Highlight score */
+}
+
+.total-overs {
+  font-size: 0.6em;
+  color: #ccc;
+}
+
+.target-display {
+  font-size: 1.1em;
+  color: #ffc107;
+  margin-top: 0.5rem;
+}
+
+/* Live Info Component */
+.live-info {
   background-color: #1a1a1a;
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid #333;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.scorecard h2 {
-    margin-top: 0;
-    text-align: center;
+.current-players {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
 }
 
-.target {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #ffc107;
-    text-align: center;
+.current-batter, .current-bowler {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.score {
-    font-size: 3em;
-    font-weight: bold;
+.player-name {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #646cff;
 }
 
-.player-roles {
-    margin: 1rem 0;
+.player-stats {
+  font-size: 0.9em;
+  color: #ccc;
 }
 
-.winner-announcement {
-    padding: 1rem;
-    background-color: #28a745;
-    color: white;
-    border-radius: 4px;
-    text-align: center;
+.current-batter .player-name {
+  color: #ffc107; /* Batter highlight */
 }
 
 /* Commentary Box Styles */
