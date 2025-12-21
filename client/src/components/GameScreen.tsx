@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameState } from '../types';
 import Controls from './Controls';
 import OverHistory from './OverHistory';
 import HeaderScore from './HeaderScore';
 import LiveInfo from './LiveInfo';
+import InningBreakdown from './InningBreakdown';
 
 interface GameScreenProps {
   gameState: GameState;
@@ -13,57 +14,63 @@ interface GameScreenProps {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onMoveSelect, hasMadeMove }) => {
-  const { batter, winner, isTossDone, warning, currentOverHistory } = gameState;
+  const { batter, winner, isTossDone, warning, currentOverHistory, out, inning } = gameState;
+  const [showInningBreakdown, setShowInningBreakdown] = useState(false);
 
   const isBatter = batter?.id === currentPlayerId;
   const gameIsOver = !!winner;
 
+  useEffect(() => {
+    // Show inning breakdown when a player is out in the first inning
+    if (out && inning === 1) {
+      setShowInningBreakdown(true);
+    }
+  }, [out, inning]);
+
+  const handleContinue = () => {
+    setShowInningBreakdown(false);
+  };
+
   if (!isTossDone) {
     return (
-        <div className="game-screen-layout">
-            <h2>Toss is happening...</h2>
-            <p>The winner of the toss will bat first.</p>
-        </div>
+      <div className="game-screen-layout">
+        <h2>Toss is happening...</h2>
+        <p>The winner of the toss will bat first.</p>
+      </div>
     );
   }
 
   return (
-    <div className="game-screen-layout">
-      <HeaderScore gameState={gameState} />
-
-      {warning && <div className="warning">{warning}</div>}
+    <div className="game-viewport">
+      {showInningBreakdown && <InningBreakdown gameState={gameState} onContinue={handleContinue} />}
       
-      <LiveInfo gameState={gameState} currentPlayerId={currentPlayerId} />
+      <div className="game-content">
+        <div className="game-screen-layout">
+          <HeaderScore gameState={gameState} />
 
-      {gameIsOver ? (
-        <div className="game-over card">
-          <h3>Game Over!</h3>
-          {/* Could add a button to go to post game scorecard if not already there */}
-        </div>
-      ) : (
-        <>
-          <OverHistory history={currentOverHistory} currentPlayerId={currentPlayerId} bowlerId={gameState.bowler?.id || ''} />
+          {warning && <div className="warning">{warning}</div>}
+          
+          <LiveInfo gameState={gameState} currentPlayerId={currentPlayerId} />
 
-          {isBatter ? (
-            <img src="/images/bat.svg" alt="Bat icon" className="game-icon" />
-          ) : (
-            <img src="/images/ball.svg" alt="Ball icon" className="game-icon" />
-          )}
-
+          <OverHistory history={currentOverHistory} isBatter={isBatter} />
+          
           <div className="role-indicator">
               You are currently {isBatter ? 'Batting' : 'Bowling'}.
           </div>
 
-          {hasMadeMove ? (
+          {hasMadeMove && !gameIsOver && (
             <p className="waiting-status card">Waiting for the other player...</p>
-          ) : (
-            <Controls onMoveSelect={onMoveSelect} disabled={false} isBatter={isBatter} />
           )}
-        </>
+        </div>
+      </div>
+
+      {!gameIsOver && (
+        <div className="controls-footer">
+          <Controls onMoveSelect={onMoveSelect} disabled={hasMadeMove} isBatter={isBatter} />
+        </div>
       )}
     </div>
   );
 };
-
 
 export default GameScreen;

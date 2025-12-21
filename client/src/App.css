@@ -67,7 +67,36 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Game Screen Layout - Now a single column flex container */
+/* New Main Layout */
+.game-viewport {
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  flex-direction: column;
+}
+
+.game-content {
+  flex-grow: 1; /* Takes up all available space */
+  overflow-y: auto; /* Allows content to scroll */
+  padding: 1rem;
+  /* Add padding to avoid being hidden by the fixed footer */
+  /* The height of controls-footer is approx 100px + padding */
+  padding-bottom: 120px; 
+}
+
+.controls-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-top: 1px solid #333;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+  z-index: 100; /* Ensure it's on top */
+}
+
+/* This class remains to give the content a max-width and center it */
 .game-screen-layout {
   display: flex;
   flex-direction: column;
@@ -75,7 +104,6 @@ button:disabled {
   width: 100%;
   max-width: 800px; /* Constrain width as before */
   margin: 0 auto; /* Center the layout */
-  padding: 1rem;
 }
 
 /* Header Score Component */
@@ -397,18 +425,24 @@ button:disabled {
   margin: 1rem 0;
 }
 
-.highlight-bowler-moves {
-  background-color: #4a4a4a; /* A subtle highlight color */
-  border-left: 5px solid #646cff; /* A more prominent highlight */
-  padding-left: calc(1rem - 5px); /* Adjust padding due to border */
+.over-history .highlight-me .history-label,
+.over-history .highlight-me .history-cell {
+  background-color: #2a2a2a;
+  border-left: 3px solid #ffc107;
+  padding-left: 5px;
 }
 
-.game-icon {
-    height: 80px; /* Increase size */
-    width: auto;  /* Let width adjust to maintain aspect ratio */
-    margin: 1.5rem auto; /* Adjust margin */
-    display: block;
-    color: #ffffff; /* Change color to white for better visibility of new ball */
+.commentary-box .highlighted-move {
+  color: #ffc107;
+  font-weight: bold;
+}
+
+.inline-icon {
+  height: 1em; /* Match the text size */
+  width: auto;
+  vertical-align: middle; /* Align with text */
+  margin-right: 0.5rem;
+  margin-bottom: 0.2rem; /* Minor adjustment */
 }
 
 /* Batter name next to score */
@@ -435,4 +469,35 @@ button:disabled {
 }
 .controls .btn-red:hover {
   border-color: #ff9a9e;
+}
+
+/* Inning Breakdown Styles */
+.inning-breakdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200; /* Ensure it's on top of everything */
+}
+
+.inning-breakdown-card {
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.inning-summary {
+  font-size: 1.2em;
+  margin: 1rem 0;
+}
+
+.target-announcement {
+  font-size: 2em;
+  color: #ffc107;
+  margin-bottom: 2rem;
 }

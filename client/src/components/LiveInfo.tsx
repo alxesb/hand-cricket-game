@@ -27,13 +27,19 @@ const LiveInfo: React.FC<LiveInfoProps> = ({ gameState, currentPlayerId }) => {
       <div className="current-players">
         {batter && (
           <div className="current-batter">
-            <span className="player-name">{getPlayerDisplayName(batter, currentPlayerId)}*</span>
+            <span className="player-name">
+              <img src="/images/bat.svg" alt="Bat" className="inline-icon" />{' '}
+              {getPlayerDisplayName(batter, currentPlayerId)}*
+            </span>
             <span className="player-stats">{batter.runsScored} ({batter.ballsFaced})</span>
           </div>
         )}
         {bowler && (
           <div className="current-bowler">
-            <span className="player-name">{getPlayerDisplayName(bowler, currentPlayerId)}</span>
+            <span className="player-name">
+              <img src="/images/ball.svg" alt="Ball" className="inline-icon" />{' '}
+              {getPlayerDisplayName(bowler, currentPlayerId)}
+            </span>
             <span className="player-stats">
               {bowler.wicketsTaken}-{bowler.runsConceded} ({formatOvers(bowler.oversBowled)})
             </span>
@@ -45,9 +51,9 @@ const LiveInfo: React.FC<LiveInfoProps> = ({ gameState, currentPlayerId }) => {
         <div className="commentary-box">
           <p>
             {getPlayerDisplayName(bowler, currentPlayerId)} bowled a{' '}
-            <strong>{lastRoundResult.bowlerMove}</strong>,{' '}
+            <span className="highlighted-move">{lastRoundResult.bowlerMove}</span>,{' '}
             {getPlayerDisplayName(batter, currentPlayerId)} played a{' '}
-            <strong>{lastRoundResult.batterMove}</strong>.
+            <span className="highlighted-move">{lastRoundResult.batterMove}</span>.
           </p>
           <p className="outcome">{lastRoundResult.outcome}</p>
         </div>
