@@ -225,8 +225,10 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
       currentBatterPlayer.runsScored += runsThisRound;
     }
 
-    if (batterNumericMove === 4) currentBatterPlayer.fours++;
-    else if (batterNumericMove === 6) currentBatterPlayer.sixes++;
+    // Update boundary stats based on the FINAL runs scored
+    if (runsThisRound === 4) currentBatterPlayer.fours++;
+    else if (runsThisRound === 6) currentBatterPlayer.sixes++;
+    
     currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound);
     game.lastRoundResult = { batterMove, bowlerMove, outcome };
   }
