@@ -5,6 +5,7 @@ import OverHistory from './OverHistory';
 import HeaderScore from './HeaderScore';
 import LiveInfo from './LiveInfo';
 import InningBreakdown from './InningBreakdown';
+import DetailedScorecard from './DetailedScorecard';
 
 interface GameScreenProps {
   gameState: GameState;
@@ -16,6 +17,7 @@ interface GameScreenProps {
 const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onMoveSelect, hasMadeMove }) => {
   const { batter, winner, isTossDone, warning, currentOverHistory, inning, target, balls, out } = gameState;
   const [showInningBreakdown, setShowInningBreakdown] = useState(false);
+  const [showFullScorecard, setShowFullScorecard] = useState(false);
 
   const isBatter = batter?.id === currentPlayerId;
   const gameIsOver = !!winner;
@@ -31,6 +33,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
     setShowInningBreakdown(false);
   };
 
+  const handleToggleScorecard = () => {
+    setShowFullScorecard(prev => !prev);
+  }
+
   if (!isTossDone) {
     return (
       <div className="game-screen-layout">
@@ -43,10 +49,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
   return (
     <div className="game-viewport">
       {showInningBreakdown && <InningBreakdown gameState={gameState} onContinue={handleContinue} />}
+      {showFullScorecard && (
+        <DetailedScorecard 
+          title="Full Scorecard"
+          gameState={gameState} 
+          currentPlayerId={currentPlayerId}
+          onClose={handleToggleScorecard}
+        />
+      )}
       
       <div className="game-content">
         <div className="game-screen-layout">
-          <HeaderScore gameState={gameState} />
+          <HeaderScore gameState={gameState} onToggleScorecard={handleToggleScorecard} />
 
           {warning && <div className="warning">{warning}</div>}
           

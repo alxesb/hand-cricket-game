@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameScreen from './components/GameScreen';
-import PostGameScorecard from './components/PostGameScorecard'; // New import
+import DetailedScorecard from './components/DetailedScorecard';
 import { GameState } from './types';
 import './App.css';
 
@@ -98,7 +98,8 @@ function App() {
 
   if (!gameState.isGameActive && gameState.winner) {
     return (
-      <PostGameScorecard
+      <DetailedScorecard
+        title="Match Summary"
         gameState={gameState}
         currentPlayerId={socket?.id || ''}
         onPlayAgain={handlePlayAgain}

@@ -3,9 +3,10 @@ import { GameState } from '../types';
 
 interface HeaderScoreProps {
   gameState: GameState;
+  onToggleScorecard: () => void;
 }
 
-const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState }) => {
+const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard }) => {
   const { score, balls, inning, target, batter, bowler } = gameState;
 
   // Calculate overs from total balls
@@ -29,6 +30,7 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState }) => {
           <span>Target: {target}</span>
         </div>
       )}
+      <button onClick={onToggleScorecard} className="scorecard-toggle-btn">Full Scorecard</button>
     </div>
   );
 };
