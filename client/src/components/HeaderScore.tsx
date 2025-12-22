@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameState } from '../types';
+import { calculateRunRate } from '../utils/stats';
 
 interface HeaderScoreProps {
   gameState: GameState;
@@ -17,6 +18,8 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard 
   // Wickets are the wickets taken by the current bowler in this inning.
   const wickets = bowler?.wicketsTaken || 0;
 
+  const runRate = calculateRunRate(score, balls);
+
   return (
     <div className="header-score">
       <div className="score-main">
@@ -25,11 +28,16 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard 
         <span className="total-score">{score}-{wickets}</span>
         <span className="total-overs"> ({oversDisplay} ov)</span>
       </div>
-      {inning === 2 && target !== null && (
-        <div className="target-display">
-          <span>Target: {target}</span>
+      <div className="extra-stats">
+        <div className="run-rate-display">
+            <span>CRR: {runRate}</span>
         </div>
-      )}
+        {inning === 2 && target !== null && (
+          <div className="target-display">
+            <span>Target: {target}</span>
+          </div>
+        )}
+      </div>
       <button onClick={onToggleScorecard} className="scorecard-toggle-btn">Full Scorecard</button>
     </div>
   );

@@ -34,64 +34,62 @@ const DetailedScorecard: React.FC<DetailedScorecardProps> = ({ gameState, curren
         <h2 className="post-game-title">{title}</h2>
         {winner && <h3 className="winner-announcement">{getPlayerDisplayName(winner)} won the match!</h3>}
         
-        <div className="scorecard-tables">
-          {/* Batting Scorecard */}
-          <div className="score-section">
-            <h5>Batting</h5>
-            <table className="score-table">
-              <thead>
-                <tr>
-                  <th>Batter</th>
-                  <th>Status</th>
-                  <th>R</th>
-                  <th>B</th>
-                  <th>4s</th>
-                  <th>6s</th>
-                  <th>SR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.map(p => (
-                  <tr key={p.id}>
-                    <td>{getPlayerDisplayName(p)}</td>
-                    <td>{getBattingStatus(p)}</td>
-                    <td>{p.runsScored}</td>
-                    <td>{p.ballsFaced}</td>
-                    <td>{p.fours}</td>
-                    <td>{p.sixes}</td>
-                    <td>{calculateStrikeRate(p.runsScored, p.ballsFaced)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="scorecard-player-summaries">
+          {players.map(p => (
+            <div key={p.id} className="player-summary-card">
+              <h4>{getPlayerDisplayName(p)}</h4>
+              
+              {/* Batting Stats Table */}
+              <div className="score-section">
+                <h5>Batting</h5>
+                <table className="score-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>R</th>
+                      <th>B</th>
+                      <th>4s</th>
+                      <th>6s</th>
+                      <th>SR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{getBattingStatus(p)}</td>
+                      <td>{p.runsScored}</td>
+                      <td>{p.ballsFaced}</td>
+                      <td>{p.fours}</td>
+                      <td>{p.sixes}</td>
+                      <td>{calculateStrikeRate(p.runsScored, p.ballsFaced)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Bowling Scorecard */}
-          <div className="score-section">
-            <h5>Bowling</h5>
-            <table className="score-table">
-              <thead>
-                <tr>
-                  <th>Bowler</th>
-                  <th>O</th>
-                  <th>R</th>
-                  <th>W</th>
-                  <th>Econ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.map(p => (
-                  <tr key={p.id}>
-                    <td>{getPlayerDisplayName(p)}</td>
-                    <td>{formatOvers(p.oversBowled)}</td>
-                    <td>{p.runsConceded}</td>
-                    <td>{p.wicketsTaken}</td>
-                    <td>{calculateEconomy(p.runsConceded, p.oversBowled)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              {/* Bowling Stats Table */}
+              <div className="score-section">
+                <h5>Bowling</h5>
+                <table className="score-table">
+                  <thead>
+                    <tr>
+                      <th>O</th>
+                      <th>R</th>
+                      <th>W</th>
+                      <th>Econ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{formatOvers(p.oversBowled)}</td>
+                      <td>{p.runsConceded}</td>
+                      <td>{p.wicketsTaken}</td>
+                      <td>{calculateEconomy(p.runsConceded, p.oversBowled)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
 
         {onPlayAgain && <button onClick={onPlayAgain} className="play-again-button">Play Again</button>}

@@ -17,3 +17,9 @@ export const calculateEconomy = (runsConceded: number, totalBalls: number): stri
   const overs = totalBalls / 6;
   return (runsConceded / overs).toFixed(2);
 };
+
+export const calculateRunRate = (runs: number, balls: number): string => {
+  if (balls === 0) return '0.00';
+  const overs = balls / 6;
+  return (runs / overs).toFixed(2);
+};

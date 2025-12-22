@@ -143,7 +143,18 @@ button:disabled {
 .target-display {
   font-size: 1.1em;
   color: #ffc107;
-  margin-top: 0.5rem;
+}
+
+.extra-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.run-rate-display {
+  font-size: 1.1em;
+  color: #ccc;
 }
 
 .scorecard-toggle-btn {
@@ -316,11 +327,30 @@ button:disabled {
   overflow-y: auto;
 }
 
-.scorecard-tables {
+.scorecard-player-summaries {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   margin: 1.5rem 0;
+}
+
+.player-summary-card {
+  background-color: #242424;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.player-summary-card h4 {
+  font-size: 1.5em;
+  color: #646cff;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.score-section {
+  margin-top: 1rem;
 }
 
 .score-section h5 {
