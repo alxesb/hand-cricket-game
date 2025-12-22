@@ -61,8 +61,8 @@ function App() {
 
   }, [socket, gameState]);
 
-  const handleCreateGame = () => {
-    socket?.emit('createGame', playerName); // Pass player name
+  const handleCreateGame = (overLimit: number | null) => {
+    socket?.emit('createGame', playerName, overLimit); // Pass player name AND overLimit
   };
 
   const handleJoinGame = (gameCode: string) => {

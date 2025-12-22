@@ -32,6 +32,7 @@ export type GameState = {
   bowlerMovesInOver: { [move: string]: number };
   warning: string | null;
   currentOverHistory: RoundResult[];
+  overLimit: number | null; // New property for game length
 };
 
 export type RoundResult = {

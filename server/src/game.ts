@@ -8,7 +8,7 @@ const generateGameCode = () => {
   return Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-export const createGame = (io: Server, socket: Socket, playerName: string) => {
+export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null) => {
   const gameCode = generateGameCode();
   const player: Player = {
     id: socket.id,
@@ -40,6 +40,7 @@ export const createGame = (io: Server, socket: Socket, playerName: string) => {
     bowlerMovesInOver: {},
     warning: null,
     currentOverHistory: [],
+    overLimit: overLimit, // Store the over limit
   };
   socket.join(gameCode);
   socket.emit('gameCreated', games[gameCode]);
@@ -177,7 +178,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
   }
 
   let isPlayerOut = false;
-
+  
   // --- Move Evaluation Logic ---
   if (batterMove === '6B') {
     if (bowlerMove === 0) {
@@ -234,7 +235,12 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
   }
 
   // --- Post-Evaluation State Update ---
-  game.balls += 1;
+  // Increment ball count if the batter is not out or if it's the end of the over limit
+  const totalBallsForOverLimit = game.overLimit !== null ? game.overLimit * 6 : Infinity;
+  if (!isPlayerOut || game.balls + 1 >= totalBallsForOverLimit) {
+      game.balls += 1;
+  }
+  
   currentBatterPlayer.ballsFaced++;
   currentBowlerPlayer.oversBowled++;
 
@@ -243,32 +249,54 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
     game.currentOverHistory.push(game.lastRoundResult);
   }
 
-  if (isPlayerOut) {
-    game.out = true;
-    currentBowlerPlayer.wicketsTaken++;
-    game.consecutiveTwos = 0;
+  // --- Check for End of Inning/Game ---
+  let inningEnded = false;
+  let gameEnded = false;
 
-    if (game.inning === 1) {
+  // Conditions for Inning 1 ending
+  if (game.inning === 1) {
+    if (isPlayerOut || game.balls >= totalBallsForOverLimit) {
+      inningEnded = true;
+    }
+  } 
+  // Conditions for Inning 2 ending
+  else if (game.inning === 2) {
+    if (isPlayerOut || game.balls >= totalBallsForOverLimit || game.score >= game.target!) {
+      inningEnded = true;
+      gameEnded = true;
+    }
+  }
+
+  if (inningEnded) {
+    // If it's the end of the first inning, set up for the second
+    if (game.inning === 1 && !gameEnded) {
       game.target = game.score + 1;
       game.inning = 2;
-      [game.batter, game.bowler] = [game.bowler, game.batter];
+      [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
+      // Reset stats for the new inning
       game.score = 0;
       game.balls = 0;
       game.out = false;
       game.bowlerMovesInOver = {};
-      game.currentOverHistory = []; // Reset for the new inning
-    } else {
-      game.winner = currentBowlerPlayer;
-      game.isGameActive = false;
-    }
-  } else {
-    // Check for winner in 2nd inning after a non-out ball
-    if (game.inning === 2 && game.target !== null && game.score >= game.target) {
-      game.winner = currentBatterPlayer;
-      game.isGameActive = false;
+      game.currentOverHistory = [];
+      game.consecutiveTwos = 0;
+    } 
+    // If the game has ended, determine the winner
+    else if (gameEnded) {
+      if (game.score >= game.target!) {
+        game.winner = currentBatterPlayer; // Batter wins by chasing target
+      } else if (game.score === game.target! - 1) {
+        game.winner = null; // It's a draw
+      } else {
+        game.winner = currentBowlerPlayer; // Bowler wins by defending
+      }
+      game.isGameActive = false; // Game is no longer active
     }
   }
   
+  // Set game.out state based on if current batter was out this turn
+  game.out = isPlayerOut; 
+
   game.moves = {};
   io.to(gameCode).emit('gameUpdate', game);
 };

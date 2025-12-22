@@ -27,6 +27,58 @@
   color: #646cff;
 }
 
+/* Lobby Header Styles */
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-header h1 {
+  margin: 0;
+  color: #646cff;
+  font-size: 3em;
+}
+
+.instructions-btn {
+  padding: 0.6em 1em;
+  font-size: 0.9em;
+  background-color: #333;
+  color: #fff;
+  border-color: #444;
+}
+
+.instructions-btn:hover {
+  border-color: #646cff;
+}
+
+/* Lobby Header Styles */
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-header h1 {
+  margin: 0;
+  color: #646cff;
+  font-size: 3em;
+}
+
+.instructions-btn {
+  padding: 0.6em 1em;
+  font-size: 0.9em;
+  background-color: #333;
+  color: #fff;
+  border-color: #444;
+}
+
+.instructions-btn:hover {
+  border-color: #646cff;
+}
+
 .game-code-display {
   margin-top: 1rem;
   background-color: #2a2a2a;
@@ -39,6 +91,34 @@
   font-weight: bold;
   color: #878eff;
   letter-spacing: 0.1em;
+}
+
+/* Game Settings for Lobby */
+.game-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  justify-content: center;
+}
+
+.game-settings-row label {
+  flex-shrink: 0;
+  color: #ccc;
+  white-space: nowrap; /* Prevent label from wrapping */
+}
+
+.game-settings-row input[type="number"] {
+  flex-grow: 1;
+  max-width: 100px;
+  text-align: center;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+.game-settings-row input[type="checkbox"] {
+  margin-right: 0.5rem;
 }
 
 input[type="text"] {
@@ -533,4 +613,26 @@ button:disabled {
   font-size: 2em;
   color: #ffc107;
   margin-bottom: 2rem;
+}
+
+/* Instructions Styles */
+.instructions-card {
+  text-align: left;
+}
+
+.instructions-content h4 {
+  color: #ffc107;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.25rem;
+}
+
+.instructions-content ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.instructions-content li {
+  margin-bottom: 0.5rem;
 }

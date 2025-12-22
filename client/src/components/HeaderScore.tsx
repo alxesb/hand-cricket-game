@@ -5,15 +5,18 @@ import { calculateRunRate } from '../utils/stats';
 interface HeaderScoreProps {
   gameState: GameState;
   onToggleScorecard: () => void;
+  onToggleInstructions: () => void;
 }
 
-const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard }) => {
-  const { score, balls, inning, target, batter, bowler } = gameState;
+const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard, onToggleInstructions }) => {
+  const { score, balls, inning, target, batter, bowler, overLimit } = gameState;
 
   // Calculate overs from total balls
   const overs = Math.floor(balls / 6);
   const remainingBallsInOver = balls % 6;
   const oversDisplay = `${overs}.${remainingBallsInOver}`;
+  
+  const overLimitDisplay = overLimit !== null ? `/${overLimit}` : '';
 
   // Wickets are the wickets taken by the current bowler in this inning.
   const wickets = bowler?.wicketsTaken || 0;
@@ -26,7 +29,7 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard 
         {/* Use the current batter's name as the team name */}
         <span className="team-name">{batter?.name.toUpperCase()}</span>
         <span className="total-score">{score}-{wickets}</span>
-        <span className="total-overs"> ({oversDisplay} ov)</span>
+        <span className="total-overs"> ({oversDisplay}{overLimitDisplay} ov)</span>
       </div>
       <div className="extra-stats">
         <div className="run-rate-display">
@@ -38,7 +41,10 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard 
           </div>
         )}
       </div>
-      <button onClick={onToggleScorecard} className="scorecard-toggle-btn">Full Scorecard</button>
+      <div className="header-buttons">
+        <button onClick={onToggleInstructions} className="instructions-btn">?</button>
+        <button onClick={onToggleScorecard} className="scorecard-toggle-btn">Full Scorecard</button>
+      </div>
     </div>
   );
 };
