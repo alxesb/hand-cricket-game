@@ -151,7 +151,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
 
   // --- Over and Bowler Validation ---
 
-  // Reset for new over
+  // Reset for new over (before this ball is counted)
   if (game.balls > 0 && game.balls % 6 === 0) {
     game.bowlerMovesInOver = {};
     game.currentOverHistory = [];
@@ -168,7 +168,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
       game.lastRoundResult = { batterMove: '?', bowlerMove, outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.` };
       game.moves = {};
       io.to(gameCode).emit('gameUpdate', game);
-      return; // End turn
+      return; // End turn, no ball is recorded
     }
     game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
     if (bowlerMoveCount === 2) {
@@ -236,6 +236,11 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
   currentBatterPlayer.ballsFaced++;
   currentBowlerPlayer.oversBowled++;
 
+  // Add the result of the ball to history *before* potential state reset
+  if (game.lastRoundResult) {
+    game.currentOverHistory.push(game.lastRoundResult);
+  }
+
   if (isPlayerOut) {
     game.out = true;
     currentBowlerPlayer.wicketsTaken++;
@@ -249,7 +254,7 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
       game.balls = 0;
       game.out = false;
       game.bowlerMovesInOver = {};
-      game.currentOverHistory = [];
+      game.currentOverHistory = []; // Reset for the new inning
     } else {
       game.winner = currentBowlerPlayer;
       game.isGameActive = false;
@@ -260,11 +265,6 @@ export const makeMove = (io: Server, socket: Socket, gameCode: string, move: num
       game.winner = currentBatterPlayer;
       game.isGameActive = false;
     }
-  }
-
-  // Add the result of the valid ball to history
-  if (game.lastRoundResult) {
-    game.currentOverHistory.push(game.lastRoundResult);
   }
   
   game.moves = {};

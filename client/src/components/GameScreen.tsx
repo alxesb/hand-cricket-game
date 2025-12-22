@@ -14,18 +14,18 @@ interface GameScreenProps {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onMoveSelect, hasMadeMove }) => {
-  const { batter, winner, isTossDone, warning, currentOverHistory, out, inning } = gameState;
+  const { batter, winner, isTossDone, warning, currentOverHistory, inning, target, balls, out } = gameState;
   const [showInningBreakdown, setShowInningBreakdown] = useState(false);
 
   const isBatter = batter?.id === currentPlayerId;
   const gameIsOver = !!winner;
 
   useEffect(() => {
-    // Show inning breakdown when a player is out in the first inning
-    if (out && inning === 1) {
+    // Show inning breakdown when the target is set (which happens at the end of inning 1)
+    if (target !== null && inning === 2 && balls === 0 && out) {
       setShowInningBreakdown(true);
     }
-  }, [out, inning]);
+  }, [target, inning, balls, out]);
 
   const handleContinue = () => {
     setShowInningBreakdown(false);
