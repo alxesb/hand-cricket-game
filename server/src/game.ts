@@ -83,15 +83,42 @@ const performToss = (io: Server, gameCode: string) => {
     if (!game || game.players.length !== 2) return;
 
     const tossWinnerIndex = Math.round(Math.random());
-    const tossLoserIndex = 1 - tossWinnerIndex;
+    const tossWinner = game.players[tossWinnerIndex];
     
-    game.batter = game.players[tossWinnerIndex];
-    game.bowler = game.players[tossLoserIndex];
-    game.isTossDone = true;
+    // Emit event to the toss winner to choose bat or bowl
+    io.to(tossWinner.id).emit('requestTossChoice', { gameCode, tossWinnerId: tossWinner.id });
 
-    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler });
+    // Send an update to all players that toss is done, but roles are not yet assigned
+    io.to(gameCode).emit('tossResult', { message: `${tossWinner.name} won the toss and is choosing to bat or bowl.` });
     io.to(gameCode).emit('gameUpdate', game);
 }
+
+export const chooseTossOption = (io: Server, socket: Socket, gameCode: string, choice: 'bat' | 'bowl') => {
+    const game = games[gameCode];
+    if (!game) {
+        socket.emit('error', 'Game not found.');
+        return;
+    }
+
+    const tossWinner = game.players.find(p => p.id === socket.id);
+    if (!tossWinner) {
+        socket.emit('error', 'You are not the toss winner for this game.');
+        return;
+    }
+
+    const otherPlayer = game.players.find(p => p.id !== socket.id)!;
+
+    if (choice === 'bat') {
+        game.batter = tossWinner;
+        game.bowler = otherPlayer;
+    } else {
+        game.batter = otherPlayer;
+        game.bowler = tossWinner;
+    }
+    game.isTossDone = true;
+    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${tossWinner.name} chose to ${choice}.` });
+    io.to(gameCode).emit('gameUpdate', game);
+};
 
 // Helper to get the numeric value of a move for scoring
 const getNumericValue = (move: number | string): number => {

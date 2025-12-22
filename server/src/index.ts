@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { createGame, joinGame, makeMove, handleDisconnect } from './game';
+import { createGame, joinGame, makeMove, handleDisconnect, chooseTossOption } from './game';
 
 const app = express();
 app.use(cors());
@@ -31,6 +31,10 @@ io.on('connection', (socket) => {
 
   socket.on('makeMove', ({ gameCode, move }: { gameCode: string, move: number }) => {
     makeMove(io, socket, gameCode, move);
+  });
+
+  socket.on('chooseTossOption', ({ gameCode, choice }: { gameCode: string, choice: 'bat' | 'bowl' }) => {
+    chooseTossOption(io, socket, gameCode, choice);
   });
 
   socket.on('disconnect', () => {

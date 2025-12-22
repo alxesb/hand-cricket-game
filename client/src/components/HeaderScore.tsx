@@ -42,7 +42,7 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard,
         )}
       </div>
       <div className="header-buttons">
-        <button onClick={onToggleInstructions} className="instructions-btn">?</button>
+        <button onClick={onToggleInstructions} className="instructions-btn">How to Play</button>
         <button onClick={onToggleScorecard} className="scorecard-toggle-btn">Full Scorecard</button>
       </div>
     </div>

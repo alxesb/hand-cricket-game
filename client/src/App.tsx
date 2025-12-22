@@ -3,7 +3,8 @@ import io, { Socket } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameScreen from './components/GameScreen';
 import DetailedScorecard from './components/DetailedScorecard';
-import { GameState } from './types';
+import TossChoice from './components/TossChoice'; // Import TossChoice
+import { GameState, Player } from './types';
 import './App.css';
 
 const SERVER_URL = 'https://hand-cricket-server.onrender.com';
@@ -13,7 +14,8 @@ function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [hasMadeMove, setHasMadeMove] = useState(false);
   const [showLobby, setShowLobby] = useState(true);
-  const [playerName, setPlayerName] = useState<string>(''); // New state for player name
+  const [playerName, setPlayerName] = useState<string>('');
+  const [tossWinnerId, setTossWinnerId] = useState<string | null>(null);
 
   // Establish socket connection
   useEffect(() => {
@@ -46,13 +48,22 @@ function App() {
       }
     });
 
-    socket.on('tossResult', ({ batter, bowler }) => {
-        if(gameState){
-            // Use a timeout to give a feeling of suspense
+    socket.on('tossResult', ({ batter, bowler, message }: { batter?: Player, bowler?: Player, message?: string }) => {
+        if(batter && bowler){
+            // If batter and bowler are defined, the choice has been made
             setTimeout(() => {
-                setGameState(prev => ({...prev!, batter, bowler, isTossDone: true}));
+                setGameState(prev => ({...prev!, batter, bowler, isTossDone: true, warning: message || null}));
+                setTossWinnerId(null); // Clear toss winner once roles are set
             }, 2000)
+        } else if (message) {
+            // Only a message, meaning toss winner is still choosing
+            setGameState(prev => ({...prev!, warning: message}));
         }
+    });
+
+    socket.on('requestTossChoice', ({ gameCode, tossWinnerId }: { gameCode: string, tossWinnerId: string }) => {
+        setTossWinnerId(tossWinnerId);
+        // Display a message to all players (handled by gameUpdate/tossResult message)
     });
 
     socket.on('error', (message: string) => {
@@ -60,6 +71,7 @@ function App() {
     });
 
   }, [socket, gameState]);
+
 
   const handleCreateGame = (overLimit: number | null) => {
     socket?.emit('createGame', playerName, overLimit); // Pass player name AND overLimit
@@ -78,11 +90,29 @@ function App() {
     }
   };
 
+  const handleTossChoice = (choice: 'bat' | 'bowl') => {
+    if (gameState) {
+      socket?.emit('chooseTossOption', { gameCode: gameState.gameCode, choice });
+      setTossWinnerId(null); // Clear the toss winner ID once choice is made
+    }
+  };
+
   const handlePlayAgain = () => {
     setGameState(null);
     setShowLobby(true);
     setPlayerName(''); // Reset player name on play again
   }
+
+  // --- Conditional Rendering ---
+
+  // If a toss winner is set and it's the current player, show the toss choice screen
+  if (tossWinnerId && socket?.id === tossWinnerId && gameState) {
+    const tossWinner = gameState.players.find(p => p.id === tossWinnerId);
+    if (tossWinner) {
+      return <TossChoice onChoose={handleTossChoice} tossWinnerName={tossWinner.name} />;
+    }
+  }
+
 
   if (showLobby || !gameState?.gameCode) {
     return (
