@@ -4,13 +4,15 @@ import { GameState, Player, RoundResult } from './types';
 // In-memory store for games
 const games: { [key: string]: GameState } = {};
 
+const AI_PLAYER_ID = 'ai_player_id_xyz'; // Unique ID for the AI player
+
 const generateGameCode = () => {
   return Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null) => {
+export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null, isVsAI: boolean) => {
   const gameCode = generateGameCode();
-  const player: Player = {
+  const humanPlayer: Player = {
     id: socket.id,
     name: playerName || 'Player 1',
     runsScored: 0,
@@ -21,9 +23,10 @@ export const createGame = (io: Server, socket: Socket, playerName: string, overL
     runsConceded: 0,
     wicketsTaken: 0,
   };
+  
   games[gameCode] = {
     gameCode,
-    players: [player],
+    players: [humanPlayer],
     isGameActive: false,
     isTossDone: false,
     batter: null,
@@ -43,7 +46,26 @@ export const createGame = (io: Server, socket: Socket, playerName: string, overL
     overLimit: overLimit, // Store the over limit
   };
   socket.join(gameCode);
-  socket.emit('gameCreated', games[gameCode]);
+
+  if (isVsAI) {
+    const aiPlayer: Player = {
+      id: AI_PLAYER_ID,
+      name: 'AI Opponent',
+      runsScored: 0,
+      ballsFaced: 0,
+      fours: 0,
+      sixes: 0,
+      oversBowled: 0,
+      runsConceded: 0,
+      wicketsTaken: 0,
+    };
+    games[gameCode].players.push(aiPlayer);
+    games[gameCode].isGameActive = true; // AI game starts immediately
+    io.to(gameCode).emit('gameUpdate', games[gameCode]);
+    performToss(io, gameCode); // Perform toss immediately for AI game
+  } else {
+    io.to(gameCode).emit('gameCreated', games[gameCode]);
+  }
 };
 
 export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: { gameCode: string; playerName: string }) => {
@@ -74,8 +96,11 @@ export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: {
   game.isGameActive = true;
   io.to(gameCode).emit('gameUpdate', game);
 
-  // Perform the toss
-  performToss(io, gameCode);
+  // If this is a human vs human game and the second player has joined, perform toss.
+  // For AI games, toss is performed immediately after AI player is added in createGame.
+  if (!game.players.some(p => p.id === AI_PLAYER_ID) && game.players.length === 2) {
+    performToss(io, gameCode);
+  }
 };
 
 const performToss = (io: Server, gameCode: string) => {
@@ -84,13 +109,27 @@ const performToss = (io: Server, gameCode: string) => {
 
     const tossWinnerIndex = Math.round(Math.random());
     const tossWinner = game.players[tossWinnerIndex];
+    const tossLoser = game.players[1 - tossWinnerIndex];
     
-    // Emit event to the toss winner to choose bat or bowl
-    io.to(tossWinner.id).emit('requestTossChoice', { gameCode, tossWinnerId: tossWinner.id });
-
-    // Send an update to all players that toss is done, but roles are not yet assigned
-    io.to(gameCode).emit('tossResult', { message: `${tossWinner.name} won the toss and is choosing to bat or bowl.` });
-    io.to(gameCode).emit('gameUpdate', game);
+    // If AI wins the toss, it makes a choice automatically
+    if (tossWinner.id === AI_PLAYER_ID) {
+        const aiChoice: 'bat' | 'bowl' = Math.random() < 0.5 ? 'bat' : 'bowl'; // 50/50 bat or bowl
+        if (aiChoice === 'bat') {
+            game.batter = tossWinner;
+            game.bowler = tossLoser;
+        } else {
+            game.batter = tossLoser;
+            game.bowler = tossWinner;
+        }
+        game.isTossDone = true;
+        io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${tossWinner.name} won the toss and chose to ${aiChoice}.` });
+        io.to(gameCode).emit('gameUpdate', game);
+    } else {
+        // Human player won the toss, emit event to them to choose
+        io.to(tossWinner.id).emit('requestTossChoice', { gameCode, tossWinnerId: tossWinner.id });
+        io.to(gameCode).emit('tossResult', { message: `${tossWinner.name} won the toss and is choosing to bat or bowl.` });
+        io.to(gameCode).emit('gameUpdate', game);
+    }
 }
 
 export const chooseTossOption = (io: Server, socket: Socket, gameCode: string, choice: 'bat' | 'bowl') => {
@@ -101,22 +140,24 @@ export const chooseTossOption = (io: Server, socket: Socket, gameCode: string, c
     }
 
     const tossWinner = game.players.find(p => p.id === socket.id);
-    if (!tossWinner) {
+    if (!tossWinner && socket.id !== AI_PLAYER_ID) { // Allow AI to make choice via internal call
         socket.emit('error', 'You are not the toss winner for this game.');
         return;
     }
+    const actualTossWinner = tossWinner || game.players.find(p => p.id === AI_PLAYER_ID)!;
 
-    const otherPlayer = game.players.find(p => p.id !== socket.id)!;
+
+    const otherPlayer = game.players.find(p => p.id !== actualTossWinner.id)!;
 
     if (choice === 'bat') {
-        game.batter = tossWinner;
+        game.batter = actualTossWinner;
         game.bowler = otherPlayer;
     } else {
         game.batter = otherPlayer;
-        game.bowler = tossWinner;
+        game.bowler = actualTossWinner;
     }
     game.isTossDone = true;
-    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${tossWinner.name} chose to ${choice}.` });
+    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${actualTossWinner.name} chose to ${choice}.` });
     io.to(gameCode).emit('gameUpdate', game);
 };
 
@@ -153,196 +194,90 @@ const isOut = (batterMove: number | string, bowlerMove: number | string): boolea
   return false;
 };
 
+// Function to generate a move for the AI player
+const generateAIMove = (game: GameState): number | string => {
+  const possibleMoves: (number | string)[] = [0, 1, '1a', '1b', '1c', 2, 3, 4, 6]; 
+  
+  const currentBatter = game.players.find(p => p.id === game.batter!.id);
+  const currentBowler = game.players.find(p => p.id === game.bowler!.id);
+  const totalBallsForOverLimit = game.overLimit !== null ? game.overLimit * 6 : Infinity;
+  const ballsRemainingInGame = totalBallsForOverLimit - game.balls;
+  const runsToWin = game.target !== null ? game.target - game.score : Infinity;
+
+  // If AI is batting
+  if (currentBatter?.id === AI_PLAYER_ID) {
+    // If it's the last ball of the game and AI needs 1 or more run to win, try a 6 or 4
+    if (game.inning === 2 && ballsRemainingInGame === 1 && runsToWin > 0) {
+        return [6, 4][Math.floor(Math.random() * 2)];
+    }
+    // Aggressive batting if chasing a target and runs are needed, or setting a target
+    if (game.inning === 1 || (game.inning === 2 && game.target && (runsToWin > 20 || (runsToWin > 10 && ballsRemainingInGame > 6)))) {
+      const aggressiveMoves = [6, 4, 3, '6B']; // Include 6B as a risky aggressive move
+      return aggressiveMoves[Math.floor(Math.random() * aggressiveMoves.length)];
+    } 
+    // Defensive batting if target is close or few balls left, or just to rotate strike
+    else {
+      const defensiveMoves = [1, '1a', '1b', '1c', 2, 0];
+      return defensiveMoves[Math.floor(Math.random() * defensiveMoves.length)];
+    }
+  } 
+  // If AI is bowling
+  else if (currentBowler?.id === AI_PLAYER_ID) {
+    // Try to get the batter out - simple prediction: assume human will play 1, 2, 3, 4, 6
+    const humanLikelyMoves = [1, 2, 3, 4, 6, '1a', '1b', '1c', '6B'];
+    const predictedHumanMove = humanLikelyMoves[Math.floor(Math.random() * humanLikelyMoves.length)];
+
+    // Check bowler move restrictions
+    const availableMovesForBowler = possibleMoves.filter(m => {
+        const moveCount = game.bowlerMovesInOver[String(m)] || 0;
+        return (m === 2 || moveCount < 3); // 2 has no restriction
+    });
+
+    // If batter's score is > 0 and AI can play 0, try to penalize if human also plays 0
+    if (currentBatter!.runsScored > 0 && availableMovesForBowler.includes(0) && Math.random() < 0.3) { // 30% chance to try 0 for penalty
+        return 0;
+    }
+
+    // Strategy: Try to get out, otherwise bowl defensively
+    // If it's a critical moment (e.g., last over, close target), try harder for out
+    const isCriticalBowlingMoment = game.inning === 2 && game.target && (runsToWin <= 10 || ballsRemainingInGame <= 6);
+    const outAttemptChance = isCriticalBowlingMoment ? 0.6 : 0.4; // Higher chance to go for out in critical moments
+
+    if (Math.random() < outAttemptChance && availableMovesForBowler.includes(predictedHumanMove)) {
+        return predictedHumanMove;
+    } else {
+        const defensiveBowlingMoves = [0, 2, 3, 1]; // Prioritize 0, 2 for dot balls
+        const filteredDefensiveMoves = defensiveBowlingMoves.filter(m => availableMovesForBowler.includes(m));
+        return filteredDefensiveMoves.length > 0 ? filteredDefensiveMoves[Math.floor(Math.random() * filteredDefensiveMoves.length)] : availableMovesForBowler[Math.floor(Math.random() * availableMovesForBowler.length)];
+    }
+  }
+
+  // Fallback to random if no specific strategy applies (shouldn't happen with above logic)
+  const randomIndex = Math.floor(Math.random() * possibleMoves.length);
+  return possibleMoves[randomIndex];
+};
+
 export const makeMove = (io: Server, socket: Socket, gameCode: string, move: number | string) => {
   const game = games[gameCode];
-  if (!game || !game.isGameActive) return;
+  if (!game || !game.isGameActive || !game.isTossDone) return; // Ensure toss is done
 
   // Clear previous round's warning
   game.warning = null;
 
-  // Record the move for the current player
-  game.moves[socket.id] = move;
-
-  const [player1, player2] = game.players;
-
-  // Wait until both players have made a move
-  if (!player1 || !player2 || game.moves[player1.id] === undefined || game.moves[player2.id] === undefined) {
-    return;
-  }
-
-  // Both players have moved, proceed with game logic
-  const batterMove = game.moves[game.batter!.id];
-  const bowlerMove = game.moves[game.bowler!.id];
-
   const currentBatterPlayer = game.players.find(p => p.id === game.batter!.id)!;
   const currentBowlerPlayer = game.players.find(p => p.id === game.bowler!.id)!;
 
-  // --- Over and Bowler Validation ---
+  // Human player's move
+  game.moves[socket.id] = move;
 
-  // Reset for new over (before this ball is counted)
-  if (game.balls > 0 && game.balls % 6 === 0) {
-    game.bowlerMovesInOver = {};
-    game.currentOverHistory = [];
+  // Check if AI needs to make a move
+  if (currentBatterPlayer.id === AI_PLAYER_ID && !game.moves[AI_PLAYER_ID]) {
+    game.moves[AI_PLAYER_ID] = generateAIMove(game);
+  } else if (currentBowlerPlayer.id === AI_PLAYER_ID && !game.moves[AI_PLAYER_ID]) {
+    game.moves[AI_PLAYER_ID] = generateAIMove(game);
   }
 
-  const bowlerMoveCount = game.bowlerMovesInOver[String(bowlerMove)] || 0;
-
-  // Apply bowler move restriction ONLY if bowlerMove is not 2
-  if (bowlerMove !== 2) {
-    if (bowlerMoveCount >= 3) {
-      currentBatterPlayer.runsScored++;
-      game.score++;
-      currentBowlerPlayer.runsConceded++;
-      game.lastRoundResult = { batterMove: '?', bowlerMove, outcome: `No Ball! Bowler used '${bowlerMove}' 3+ times. +1 run.` };
-      game.moves = {};
-      io.to(gameCode).emit('gameUpdate', game);
-      return; // End turn, no ball is recorded
-    }
-    game.bowlerMovesInOver[String(bowlerMove)] = bowlerMoveCount + 1;
-    if (bowlerMoveCount === 2) {
-      game.warning = `Warning: Bowler has used '${bowlerMove}' 3 times. They cannot use it again in this over.`;
-    }
+  // Ensure both players have made a move (human and/or AI)
+  if (!game.moves[currentBatterPlayer.id] || !game.moves[currentBowlerPlayer.id]) {
+      return; // Still waiting for a move
   }
-
-  let isPlayerOut = false;
-  
-  // --- Move Evaluation Logic ---
-  if (batterMove === '6B') {
-    if (bowlerMove === 0) {
-      isPlayerOut = true;
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT! 6B backfired!" };
-    } else if (bowlerMove === 6) {
-      const runsThisRound = 6;
-      game.score += runsThisRound;
-      currentBatterPlayer.runsScored += runsThisRound;
-      currentBatterPlayer.sixes++;
-      currentBowlerPlayer.runsConceded += runsThisRound;
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "SIX! 6B successful!" };
-    } else {
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball! 6B defended." };
-    }
-  } else if (batterMove === 2 && bowlerMove === 2) {
-    game.consecutiveTwos++;
-    if (game.consecutiveTwos >= 3) {
-      isPlayerOut = true;
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT! (3 consecutive matching 2s)" };
-    } else {
-      game.lastRoundResult = { batterMove, bowlerMove, outcome: "Dot Ball!" };
-    }
-  } else if (isOut(batterMove, bowlerMove)) {
-    isPlayerOut = true;
-    game.lastRoundResult = { batterMove, bowlerMove, outcome: "OUT!" };
-  } else {
-    // Standard Scoring for non-special cases
-    game.consecutiveTwos = 0;
-    const batterNumericMove = getNumericValue(batterMove);
-    const bowlerNumericMove = getNumericValue(bowlerMove);
-    let runsThisRound = batterNumericMove;
-    let outcome = `${runsThisRound} RUNS!`;
-
-    if (batterMove === 6 && bowlerMove === 4) { runsThisRound = 4; outcome = `Bowler saved 2 runs! 4 RUNS!`; }
-    else if (batterMove === 4 && bowlerMove === 6) { runsThisRound = 2; outcome = `Bowler saved 2 runs! 2 RUNS!`; }
-    else if (batterMove === 3 && bowlerNumericMove === 1) { runsThisRound = 1; outcome = `Bowler saved 2 runs! 1 RUN!`; }
-    else if (batterMove === 0 && bowlerMove === 0 && game.score > 0) { runsThisRound = -1; outcome = "0-0 Defensive Penalty: -1 Run!"; }
-
-    if (runsThisRound === -1) {
-      game.score = Math.max(0, game.score - 1);
-      currentBatterPlayer.runsScored = Math.max(0, currentBatterPlayer.runsScored - 1);
-    } else {
-      game.score += runsThisRound;
-      currentBatterPlayer.runsScored += runsThisRound;
-    }
-
-    // Update boundary stats based on the FINAL runs scored
-    if (runsThisRound === 4) currentBatterPlayer.fours++;
-    else if (runsThisRound === 6) currentBatterPlayer.sixes++;
-    
-    currentBowlerPlayer.runsConceded += Math.max(0, runsThisRound);
-    game.lastRoundResult = { batterMove, bowlerMove, outcome };
-  }
-
-  // --- Post-Evaluation State Update ---
-  // Increment ball count if the batter is not out or if it's the end of the over limit
-  const totalBallsForOverLimit = game.overLimit !== null ? game.overLimit * 6 : Infinity;
-  if (!isPlayerOut || game.balls + 1 >= totalBallsForOverLimit) {
-      game.balls += 1;
-  }
-  
-  currentBatterPlayer.ballsFaced++;
-  currentBowlerPlayer.oversBowled++;
-
-  // Add the result of the ball to history *before* potential state reset
-  if (game.lastRoundResult) {
-    game.currentOverHistory.push(game.lastRoundResult);
-  }
-
-  // --- Check for End of Inning/Game ---
-  let inningEnded = false;
-  let gameEnded = false;
-
-  // Conditions for Inning 1 ending
-  if (game.inning === 1) {
-    if (isPlayerOut || game.balls >= totalBallsForOverLimit) {
-      inningEnded = true;
-    }
-  } 
-  // Conditions for Inning 2 ending
-  else if (game.inning === 2) {
-    if (isPlayerOut || game.balls >= totalBallsForOverLimit || game.score >= game.target!) {
-      inningEnded = true;
-      gameEnded = true;
-    }
-  }
-
-  if (inningEnded) {
-    // If it's the end of the first inning, set up for the second
-    if (game.inning === 1 && !gameEnded) {
-      game.target = game.score + 1;
-      game.inning = 2;
-      [game.batter, game.bowler] = [game.bowler, game.batter]; // Swap roles
-      // Reset stats for the new inning
-      game.score = 0;
-      game.balls = 0;
-      game.out = false;
-      game.bowlerMovesInOver = {};
-      game.currentOverHistory = [];
-      game.consecutiveTwos = 0;
-    } 
-    // If the game has ended, determine the winner
-    else if (gameEnded) {
-      if (game.score >= game.target!) {
-        game.winner = currentBatterPlayer; // Batter wins by chasing target
-      } else if (game.score === game.target! - 1) {
-        game.winner = null; // It's a draw
-      } else {
-        game.winner = currentBowlerPlayer; // Bowler wins by defending
-      }
-      game.isGameActive = false; // Game is no longer active
-    }
-  }
-  
-  // Set game.out state based on if current batter was out this turn
-  game.out = isPlayerOut; 
-
-  game.moves = {};
-  io.to(gameCode).emit('gameUpdate', game);
-};
-
-export const handleDisconnect = (io: Server, socket: Socket) => {
-    // Find the game the user was in
-    const gameCode = Object.keys(games).find(gc => games[gc].players.some(p => p.id === socket.id));
-    if (gameCode) {
-        const game = games[gameCode];
-        // If the game was active, the other player wins
-        if (game.isGameActive) {
-            const remainingPlayer = game.players.find(p => p.id !== socket.id);
-            if(remainingPlayer){
-                game.winner = remainingPlayer;
-                game.isGameActive = false;
-                io.to(gameCode).emit('gameUpdate', game);
-            }
-        }
-        // Clean up the game
-        delete games[gameCode];
-    }
-}

@@ -1,5 +1,4 @@
-import React from 'react';
-import { GameState, Player } from '../types';
+import { GameState, Player, AI_PLAYER_ID } from '../types';
 
 interface LiveInfoProps {
   gameState: GameState;
@@ -16,6 +15,7 @@ const formatOvers = (totalBalls: number): string => {
 // Helper to get player display name (re-used from Scorecard)
 const getPlayerDisplayName = (player: Player | null, localPlayerId: string) => {
   if (!player) return '';
+  if (player.id === AI_PLAYER_ID) return 'AI Opponent';
   return player.name + (player.id === localPlayerId ? ' (You)' : '');
 };
 
