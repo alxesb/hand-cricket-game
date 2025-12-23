@@ -9,6 +9,8 @@ interface OverHistoryProps {
 // Helper function to extract the essential result from the outcome string
 const getDisplayResult = (outcome: string): string => {
   if (outcome.includes('OUT')) return 'W';
+  if (outcome.includes('6B successful')) return '6';
+  if (outcome.includes('6B defended')) return '0';
   if (outcome.includes('Dot Ball')) return '0';
   if (outcome.includes('Penalty')) return '-1';
 

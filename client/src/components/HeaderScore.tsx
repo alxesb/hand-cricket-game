@@ -22,6 +22,9 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard,
   const wickets = bowler?.wicketsTaken || 0;
 
   const runRate = calculateRunRate(score, balls);
+  const totalBallsForOverLimit = overLimit !== null ? overLimit * 6 : null;
+  const ballsRemaining = totalBallsForOverLimit !== null ? Math.max(totalBallsForOverLimit - balls, 0) : null;
+  const runsToWin = inning === 2 && target !== null ? target - score : null;
 
   return (
     <div className="header-score">
@@ -36,9 +39,16 @@ const HeaderScore: React.FC<HeaderScoreProps> = ({ gameState, onToggleScorecard,
             <span>CRR: {runRate}</span>
         </div>
         {inning === 2 && target !== null && (
-          <div className="target-display">
-            <span>Target: {target}</span>
-          </div>
+          <>
+            <div className="target-display">
+              <span>Target: {target}</span>
+            </div>
+            {runsToWin !== null && runsToWin > 0 && ballsRemaining !== null && (
+              <div className="target-display">
+                <span>{batter?.name} needs {runsToWin} runs from {ballsRemaining} balls to win</span>
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="header-buttons">
