@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameState } from '../types';
+import { GameState, AI_PLAYER_ID } from '../types';
 import Controls from './Controls';
 import OverHistory from './OverHistory';
 import HeaderScore from './HeaderScore';
@@ -23,6 +23,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
 
   const isBatter = batter?.id === currentPlayerId;
   const gameIsOver = !!winner;
+  const isOpponentAI = gameState.players.some(p => p.id === AI_PLAYER_ID);
 
   useEffect(() => {
     // Show inning breakdown when the target is set (which happens at the end of inning 1)
@@ -80,7 +81,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameState, currentPlayerId, onM
           </div>
 
           {hasMadeMove && !gameIsOver && (
-            <p className="waiting-status card">Waiting for the other player...</p>
+            <p className="waiting-status card">{isOpponentAI ? "Waiting for AI's move..." : "Waiting for the other player..."}</p>
           )}
         </div>
       </div>
