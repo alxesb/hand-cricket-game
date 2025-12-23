@@ -14,11 +14,10 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
   const [showInstructions, setShowInstructions] = useState(false);
   const [overs, setOvers] = useState<number>(5);
   const [isUnlimited, setIsUnlimited] = useState<boolean>(false);
-  const [isVsAI, setIsVsAI] = useState<boolean>(false); // New state for AI option
 
-  const handleCreateGame = () => {
+  const handleCreateGame = (isAI: boolean) => {
     // Pass null for unlimited overs, or the selected number, and the isVsAI flag
-    onCreateGame(isUnlimited ? null : overs, isVsAI);
+    onCreateGame(isUnlimited ? null : overs, isAI);
   };
 
   return (
@@ -66,23 +65,19 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
             Unlimited Overs
           </label>
         </div>
-        <div className="game-settings-row">
-          <label htmlFor="vs-ai-checkbox">
-            <input
-              id="vs-ai-checkbox"
-              type="checkbox"
-              checked={isVsAI}
-              onChange={(e) => setIsVsAI(e.target.checked)}
-            />{' '}
-            Play with AI
-          </label>
-        </div>
+      </div>
+      <div className="card">
+        <h2>Play with AI</h2>
+        <p>Challenge the computer in a solo match.</p>
+        <button onClick={() => handleCreateGame(true)} disabled={!playerName}>
+          Start AI Game
+        </button>
       </div>
       <div className="card">
         <h2>Create Game</h2>
         <p>Start a new game and invite a friend.</p>
-        <button onClick={handleCreateGame} disabled={!playerName}>
-          {isVsAI ? 'Start AI Game' : 'Create New Game'}
+        <button onClick={() => handleCreateGame(false)} disabled={!playerName}>
+          Create New Game
         </button>
         {gameCode && (
           <div className="game-code-display">
