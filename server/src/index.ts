@@ -21,8 +21,8 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  socket.on('createGame', (playerName: string, overLimit: number | null, isVsAI: boolean) => {
-    createGame(io, socket, playerName, overLimit, isVsAI);
+  socket.on('createGame', (playerName: string, overLimit: number | null) => {
+    createGame(io, socket, playerName, overLimit);
   });
 
   socket.on('joinGame', (data: { gameCode: string, playerName: string }) => {

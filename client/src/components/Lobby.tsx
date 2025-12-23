@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Instructions from './Instructions';
 
 interface LobbyProps {
-  onCreateGame: (overLimit: number | null, isVsAI: boolean) => void;
+  onCreateGame: (overLimit: number | null) => void;
   onJoinGame: (gameCode: string) => void;
   gameCode: string | null;
   playerName: string;
@@ -14,11 +14,10 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
   const [showInstructions, setShowInstructions] = useState(false);
   const [overs, setOvers] = useState<number>(5);
   const [isUnlimited, setIsUnlimited] = useState<boolean>(false);
-  const [isVsAI, setIsVsAI] = useState<boolean>(false); // New state for AI option
 
   const handleCreateGame = () => {
-    // Pass null for unlimited overs, or the selected number, and the isVsAI flag
-    onCreateGame(isUnlimited ? null : overs, isVsAI);
+    // Pass null for unlimited overs, or the selected number
+    onCreateGame(isUnlimited ? null : overs);
   };
 
   return (
@@ -64,17 +63,6 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
               onChange={(e) => setIsUnlimited(e.target.checked)}
             />{' '}
             Unlimited Overs
-          </label>
-        </div>
-        <div className="game-settings-row">
-          <label htmlFor="vs-ai-checkbox">
-            <input
-              id="vs-ai-checkbox"
-              type="checkbox"
-              checked={isVsAI}
-              onChange={(e) => setIsVsAI(e.target.checked)}
-            />{' '}
-            Play with AI
           </label>
         </div>
       </div>
