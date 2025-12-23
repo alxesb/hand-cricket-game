@@ -16,6 +16,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
   const [isUnlimited, setIsUnlimited] = useState<boolean>(false);
 
   const handleCreateGame = (isAI: boolean) => {
+    console.log('handleCreateGame called in Lobby with isAI:', isAI);
     // Pass null for unlimited overs, or the selected number, and the isVsAI flag
     onCreateGame(isUnlimited ? null : overs, isAI);
   };
