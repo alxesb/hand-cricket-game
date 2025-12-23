@@ -21,8 +21,9 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  socket.on('createGame', (isVsAI: boolean, playerName: string, overLimit: number | null) => {
-    console.log('createGame event received on server with values:', { isVsAI, playerName, overLimit });
+  socket.on('createGame', (data: { isVsAI: boolean, playerName: string, overLimit: number | null }) => {
+    console.log('createGame event received on server with values:', data);
+    const { isVsAI, playerName, overLimit } = data;
     createGame(io, socket, playerName, overLimit, isVsAI);
   });
 

@@ -78,7 +78,7 @@ function App() {
 
   const handleCreateGame = (overLimit: number | null, isVsAI: boolean) => {
     console.log('handleCreateGame called in App with:', { overLimit, isVsAI });
-    socket?.emit('createGame', isVsAI, playerName, overLimit); // Pass player name, overLimit AND isVsAI
+    socket?.emit('createGame', { isVsAI, playerName, overLimit }); // Pass a single object
   };
 
   const handleJoinGame = (gameCode: string) => {
