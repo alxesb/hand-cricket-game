@@ -37,6 +37,7 @@ function App() {
     });
 
     socket.on('gameUpdate', (game: GameState) => {
+      console.log('gameUpdate received', game);
       setGameState(game);
       setHasMadeMove(false); // Reset move status for the new round
 
