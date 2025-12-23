@@ -37,13 +37,16 @@ function App() {
     });
 
     socket.on('gameUpdate', (game: GameState) => {
+      console.log('gameUpdate received on client:', game);
       setGameState(game);
       setHasMadeMove(false); // Reset move status for the new round
 
       // Determine whether to show the lobby based on game state
       if (game.isGameActive || (!game.isGameActive && game.winner)) {
+        console.log('Hiding lobby');
         setShowLobby(false); // Game is active or game over with a winner, hide lobby
       } else {
+        console.log('Showing lobby');
         setShowLobby(true); // Game not active and no winner (e.g., waiting for player 2, or game deleted), show lobby
       }
     });
