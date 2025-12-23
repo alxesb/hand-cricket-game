@@ -1,8 +1,6 @@
 // This mirrors the server-side types.
 // Keeping them in sync is important for type safety.
 
-export const AI_PLAYER_ID = 'ai_player_id_xyz';
-
 export type Player = {
   id: string;
   name: string;

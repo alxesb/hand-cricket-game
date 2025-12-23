@@ -3,13 +3,12 @@ import { GameState, Player, RoundResult } from './types';
 
 // In-memory store for games
 const games: { [key: string]: GameState } = {};
-const AI_PLAYER_ID = 'ai_player_id_xyz';
 
 const generateGameCode = () => {
   return Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null, isVsAI: boolean) => {
+export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null) => {
   const gameCode = generateGameCode();
   const player: Player = {
     id: socket.id,
@@ -44,26 +43,7 @@ export const createGame = (io: Server, socket: Socket, playerName: string, overL
     overLimit: overLimit, // Store the over limit
   };
   socket.join(gameCode);
-
-  if (isVsAI) {
-    const aiPlayer: Player = {
-      id: AI_PLAYER_ID,
-      name: 'AI Opponent',
-      runsScored: 0,
-      ballsFaced: 0,
-      fours: 0,
-      sixes: 0,
-      oversBowled: 0,
-      runsConceded: 0,
-      wicketsTaken: 0,
-    };
-    games[gameCode].players.push(aiPlayer);
-    games[gameCode].isGameActive = true; // Start immediately
-    io.to(gameCode).emit('gameUpdate', games[gameCode]);
-    performToss(io, gameCode, true); // AI game toss auto-handled
-  } else {
-    socket.emit('gameCreated', games[gameCode]);
-  }
+  socket.emit('gameCreated', games[gameCode]);
 };
 
 export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: { gameCode: string; playerName: string }) => {
@@ -95,35 +75,20 @@ export const joinGame = (io: Server, socket: Socket, { gameCode, playerName }: {
   io.to(gameCode).emit('gameUpdate', game);
 
   // Perform the toss
-  performToss(io, gameCode, false);
+  performToss(io, gameCode);
 };
 
-const performToss = (io: Server, gameCode: string, isVsAI: boolean) => {
+const performToss = (io: Server, gameCode: string) => {
     const game = games[gameCode];
     if (!game || game.players.length !== 2) return;
 
     const tossWinnerIndex = Math.round(Math.random());
     const tossWinner = game.players[tossWinnerIndex];
-    const tossLoser = game.players[1 - tossWinnerIndex];
-
-    // If AI wins the toss, auto choose
-    if (isVsAI && tossWinner.id === AI_PLAYER_ID) {
-      const aiChoice: 'bat' | 'bowl' = Math.random() < 0.5 ? 'bat' : 'bowl';
-      if (aiChoice === 'bat') {
-        game.batter = tossWinner;
-        game.bowler = tossLoser;
-      } else {
-        game.batter = tossLoser;
-        game.bowler = tossWinner;
-      }
-      game.isTossDone = true;
-      io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${tossWinner.name} won the toss and chose to ${aiChoice}.` });
-      io.to(gameCode).emit('gameUpdate', game);
-      return;
-    }
-
-    // Human toss winner chooses
+    
+    // Emit event to the toss winner to choose bat or bowl
     io.to(tossWinner.id).emit('requestTossChoice', { gameCode, tossWinnerId: tossWinner.id });
+
+    // Send an update to all players that toss is done, but roles are not yet assigned
     io.to(gameCode).emit('tossResult', { message: `${tossWinner.name} won the toss and is choosing to bat or bowl.` });
     io.to(gameCode).emit('gameUpdate', game);
 }
@@ -136,23 +101,22 @@ export const chooseTossOption = (io: Server, socket: Socket, gameCode: string, c
     }
 
     const tossWinner = game.players.find(p => p.id === socket.id);
-    if (!tossWinner && socket.id !== AI_PLAYER_ID) {
+    if (!tossWinner) {
         socket.emit('error', 'You are not the toss winner for this game.');
         return;
     }
 
-    const actualTossWinner = tossWinner || game.players.find(p => p.id === AI_PLAYER_ID)!;
-    const otherPlayer = game.players.find(p => p.id !== actualTossWinner.id)!;
+    const otherPlayer = game.players.find(p => p.id !== socket.id)!;
 
     if (choice === 'bat') {
-        game.batter = actualTossWinner;
+        game.batter = tossWinner;
         game.bowler = otherPlayer;
     } else {
         game.batter = otherPlayer;
-        game.bowler = actualTossWinner;
+        game.bowler = tossWinner;
     }
     game.isTossDone = true;
-    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${actualTossWinner.name} chose to ${choice}.` });
+    io.to(gameCode).emit('tossResult', { batter: game.batter, bowler: game.bowler, message: `${tossWinner.name} chose to ${choice}.` });
     io.to(gameCode).emit('gameUpdate', game);
 };
 
@@ -189,99 +153,29 @@ const isOut = (batterMove: number | string, bowlerMove: number | string): boolea
   return false;
 };
 
-// Generate a context-aware AI move
-const generateAIMove = (game: GameState): number | string => {
-  const possibleMoves: (number | string)[] = [0, 1, '1a', '1b', '1c', 2, 3, 4, 6, '6B'];
-  const totalBallsForOverLimit = game.overLimit !== null ? game.overLimit * 6 : Infinity;
-  const ballsRemainingInGame = totalBallsForOverLimit - game.balls;
-  const runsToWin = game.target !== null ? game.target - game.score : Infinity;
-
-  const currentBatter = game.batter ? game.players.find(p => p.id === game.batter!.id) : null;
-  const currentBowler = game.bowler ? game.players.find(p => p.id === game.bowler!.id) : null;
-
-  // Defensive helper to respect bowler move caps
-  const availableBowlingMoves = possibleMoves.filter(m => {
-    const moveCount = game.bowlerMovesInOver[String(m)] || 0;
-    return m === 2 || moveCount < 3;
-  });
-
-  // AI batting logic
-  if (currentBatter?.id === AI_PLAYER_ID) {
-    // Endgame chase: last ball, need runs
-    if (game.inning === 2 && ballsRemainingInGame <= 1 && runsToWin > 0) {
-      return runsToWin <= 4 ? 4 : 6;
-    }
-    // Chasing and need acceleration
-    if (game.inning === 2 && game.target !== null && runsToWin > 12) {
-      return ['6B', 6, 4, 3][Math.floor(Math.random() * 4)];
-    }
-    // Setting a target or early innings: balanced aggression
-    if (game.inning === 1 || runsToWin > 6) {
-      return [6, 4, 3, '6B', 2, 1][Math.floor(Math.random() * 6)];
-    }
-    // Close finish: keep it low-risk
-    return [1, '1a', '1b', '1c', 2, 0][Math.floor(Math.random() * 6)];
-  }
-
-  // AI bowling logic
-  if (currentBowler?.id === AI_PLAYER_ID) {
-    // Critical defense: prioritize outs
-    const critical = game.inning === 2 && game.target !== null && (runsToWin <= 12 || ballsRemainingInGame <= 6);
-    const predicted = [1, 2, 3, 4, 6, '1a', '1b', '1c', '6B'][Math.floor(Math.random() * 9)];
-
-    // Try to match predicted for wicket
-    if (availableBowlingMoves.includes(predicted) && Math.random() < (critical ? 0.6 : 0.4)) {
-      return predicted;
-    }
-
-    // Penalize 0-0 if batter has runs
-    if (currentBatter && currentBatter.runsScored > 0 && availableBowlingMoves.includes(0) && Math.random() < 0.25) {
-      return 0;
-    }
-
-    // Default defensive mix
-    const defensive = [2, 0, 3, 1];
-    const filtered = defensive.filter(m => availableBowlingMoves.includes(m));
-    if (filtered.length > 0) {
-      return filtered[Math.floor(Math.random() * filtered.length)];
-    }
-    return availableBowlingMoves[Math.floor(Math.random() * availableBowlingMoves.length)];
-  }
-
-  // Fallback
-  const randomIndex = Math.floor(Math.random() * possibleMoves.length);
-  return possibleMoves[randomIndex];
-};
-
 export const makeMove = (io: Server, socket: Socket, gameCode: string, move: number | string) => {
   const game = games[gameCode];
-  if (!game || !game.isGameActive || !game.isTossDone || !game.batter || !game.bowler) return;
+  if (!game || !game.isGameActive) return;
 
   // Clear previous round's warning
   game.warning = null;
 
-  const currentBatterPlayer = game.players.find(p => p.id === game.batter.id)!;
-  const currentBowlerPlayer = game.players.find(p => p.id === game.bowler.id)!;
-
   // Record the move for the current player
   game.moves[socket.id] = move;
 
-  // If AI needs to play, generate its move
-  if (currentBatterPlayer.id === AI_PLAYER_ID && game.moves[AI_PLAYER_ID] === undefined) {
-    game.moves[AI_PLAYER_ID] = generateAIMove(game);
-  }
-  if (currentBowlerPlayer.id === AI_PLAYER_ID && game.moves[AI_PLAYER_ID] === undefined) {
-    game.moves[AI_PLAYER_ID] = generateAIMove(game);
-  }
+  const [player1, player2] = game.players;
 
-  // Wait until both batter and bowler have made a move
-  if (game.moves[currentBatterPlayer.id] === undefined || game.moves[currentBowlerPlayer.id] === undefined) {
+  // Wait until both players have made a move
+  if (!player1 || !player2 || game.moves[player1.id] === undefined || game.moves[player2.id] === undefined) {
     return;
   }
 
   // Both players have moved, proceed with game logic
-  const batterMove = game.moves[currentBatterPlayer.id];
-  const bowlerMove = game.moves[currentBowlerPlayer.id];
+  const batterMove = game.moves[game.batter!.id];
+  const bowlerMove = game.moves[game.bowler!.id];
+
+  const currentBatterPlayer = game.players.find(p => p.id === game.batter!.id)!;
+  const currentBowlerPlayer = game.players.find(p => p.id === game.bowler!.id)!;
 
   // --- Over and Bowler Validation ---
 

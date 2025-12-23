@@ -21,16 +21,15 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  socket.on('createGame', (data: { playerName: string, overLimit: number | null, isVsAI: boolean }) => {
-    const { playerName, overLimit, isVsAI } = data;
-    createGame(io, socket, playerName, overLimit, isVsAI);
+  socket.on('createGame', (playerName: string, overLimit: number | null) => {
+    createGame(io, socket, playerName, overLimit);
   });
 
   socket.on('joinGame', (data: { gameCode: string, playerName: string }) => {
     joinGame(io, socket, data);
   });
 
-  socket.on('makeMove', ({ gameCode, move }: { gameCode: string, move: number | string }) => {
+  socket.on('makeMove', ({ gameCode, move }: { gameCode: string, move: number }) => {
     makeMove(io, socket, gameCode, move);
   });
 

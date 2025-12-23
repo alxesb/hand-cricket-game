@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Instructions from './Instructions';
 
 interface LobbyProps {
-  onCreateGame: (overLimit: number | null, isVsAI: boolean) => void;
+  onCreateGame: (overLimit: number | null) => void;
   onJoinGame: (gameCode: string) => void;
   gameCode: string | null;
   playerName: string;
@@ -15,9 +15,9 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
   const [overs, setOvers] = useState<number>(5);
   const [isUnlimited, setIsUnlimited] = useState<boolean>(false);
 
-  const handleCreateGame = (isVsAI: boolean) => {
+  const handleCreateGame = () => {
     // Pass null for unlimited overs, or the selected number
-    onCreateGame(isUnlimited ? null : overs, isVsAI);
+    onCreateGame(isUnlimited ? null : overs);
   };
 
   return (
@@ -67,15 +67,9 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
         </div>
       </div>
       <div className="card">
-        <h2>Play vs AI</h2>
-        <p>Challenge a smart AI that respects the rules and game situation.</p>
-        <button onClick={() => handleCreateGame(true)} disabled={!playerName}>Start AI Game</button>
-      </div>
-
-      <div className="card">
         <h2>Create Game</h2>
         <p>Start a new game and invite a friend.</p>
-        <button onClick={() => handleCreateGame(false)} disabled={!playerName}>Create New Game</button>
+        <button onClick={handleCreateGame} disabled={!playerName}>Create New Game</button>
         {gameCode && (
           <div className="game-code-display">
             <p>Share this code with your friend:</p>
