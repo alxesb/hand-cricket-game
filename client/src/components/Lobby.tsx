@@ -67,7 +67,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
         </div>
       </div>
       <div className="card">
-        <h2>Game with AI</h2>
+        <h2>Play with AI</h2>
         <p>Challenge the computer in a solo match.</p>
         <button onClick={() => handleCreateGame(true)} disabled={!playerName}>
           Start AI Game
