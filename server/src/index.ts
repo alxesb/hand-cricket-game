@@ -22,7 +22,7 @@ io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
   socket.on('createGame', (isVsAI: boolean, playerName: string, overLimit: number | null) => {
-    console.log('createGame event received on server with values:', { isVsAI, playerName, overLimit });
+    console.log('createGame event received on server:', { isVsAI, playerName, overLimit });
     createGame(io, socket, playerName, overLimit, isVsAI);
   });
 

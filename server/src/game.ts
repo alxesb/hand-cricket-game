@@ -11,7 +11,6 @@ const generateGameCode = () => {
 };
 
 export const createGame = (io: Server, socket: Socket, playerName: string, overLimit: number | null, isVsAI: boolean) => {
-  console.log('createGame function in game.ts called with isVsAI:', isVsAI);
   const gameCode = generateGameCode();
   const humanPlayer: Player = {
     id: socket.id,
