@@ -81,9 +81,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateGame, onJoinGame, gameCode, playe
       <div className="card">
         <h2>Create Game</h2>
         <p>Start a new game and invite a friend.</p>
-        <button onClick={handleCreateGame} disabled={!playerName}>
-          {isVsAI ? 'Start AI Game' : 'Create New Game'}
-        </button>
+        <button onClick={handleCreateGame} disabled={!playerName}>Create New Game</button>
         {gameCode && (
           <div className="game-code-display">
             <p>Share this code with your friend:</p>
